@@ -1,0 +1,64 @@
+import { useEffect, useState } from "react";
+import { EnhancedChart } from "@/components/charts/EnhancedChart";
+import { useThemeColors } from "@/hooks/use-theme-colors";
+import { cn } from "@/lib/utils";
+
+interface ThemedAreaChartProps {
+  title: string;
+  description?: string;
+  data: Array<{
+    name: string;
+    [key: string]: number | string;
+  }>;
+  categories: Array<{
+    name: string;
+    color?: string;
+  }>;
+  className?: string;
+  height?: number;
+}
+
+export function ThemedAreaChart({
+  title,
+  description,
+  data,
+  categories,
+  className,
+  height = 300,
+}: ThemedAreaChartProps) {
+  const { getThemeClasses } = useThemeColors();
+  const themeClasses = getThemeClasses();
+
+  // Transform data for Chart.js format
+  const chartData = {
+    labels: data.map(item => item.name),
+    datasets: categories.map((category, index) => ({
+      label: category.name,
+      data: data.map(item => item[category.name] as number || 0),
+      backgroundColor: (category.color || themeClasses.chart) + '20',
+      borderColor: category.color || themeClasses.chart,
+      borderWidth: 2,
+      fill: true,
+      tension: 0.4,
+    })),
+  };
+
+  return (
+    <EnhancedChart
+      title={title}
+      description={description}
+      type="area"
+      data={chartData}
+      height={height}
+      className={cn("glass-card", className)}
+      preset="financial"
+      colorScheme="gradient"
+      animation="fade"
+      showControls={true}
+      showLegend={true}
+      interactive={true}
+      exportable={true}
+      refreshable={true}
+    />
+  );
+}

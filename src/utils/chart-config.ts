@@ -1,9 +1,39 @@
 import {
     Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    BarElement,
+    ArcElement,
+    Title,
+    Tooltip,
+    Legend,
+    Filler,
+    RadialLinearScale,
+    TimeScale,
+    TimeSeriesScale,
 } from 'chart.js';
 import { useTheme } from '@/hooks/use-theme';
 import { useThemeColors } from '@/hooks/use-theme-colors';
 import { FINANCIAL_HUB_COLORS } from './color-utils';
+
+// Register Chart.js components
+ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    BarElement,
+    ArcElement,
+    Title,
+    Tooltip,
+    Legend,
+    Filler,
+    RadialLinearScale,
+    TimeScale,
+    TimeSeriesScale
+);
 
 // Financial Hub Color Palette for charts
 export const CHART_COLORS = {
@@ -32,10 +62,13 @@ export const createGradients = (ctx: CanvasRenderingContext2D, colors: string[])
 };
 
 // Professional chart options with theme integration
-export const getChartOptions = (
-    type: 'line' | 'bar' | 'area' | 'doughnut' | 'pie' | 'radar' | 'scatter',
-    isDark: boolean = false
-) => {
+export const getChartOptions = (type: 'line' | 'bar' | 'area' | 'doughnut' | 'pie' | 'radar' | 'scatter') => {
+    const { theme } = useTheme();
+    const { getThemeClasses } = useThemeColors();
+    const themeClasses = getThemeClasses();
+
+    const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
     const baseOptions = {
         responsive: true,
         maintainAspectRatio: false,
@@ -404,42 +437,11 @@ export const updateChartTheme = (chart: ChartJS, isDark: boolean) => {
     const textColor = isDark ? '#e5e7eb' : '#374151';
     const gridColor = isDark ? 'rgba(75, 85, 99, 0.2)' : 'rgba(229, 231, 235, 0.8)';
 
-    // Update legend colors if legend exists
-    if (chart.options.plugins?.legend?.labels) {
-        chart.options.plugins.legend.labels.color = textColor;
-    }
-
-    // Update scales based on chart type
-    if (chart.options.scales) {
-        // Handle Cartesian charts (line, bar, area, scatter)
-        if (chart.options.scales.x && chart.options.scales.y) {
-            if (chart.options.scales.x.grid) {
-                chart.options.scales.x.grid.color = gridColor;
-            }
-            if (chart.options.scales.y.grid) {
-                chart.options.scales.y.grid.color = gridColor;
-            }
-            if (chart.options.scales.x.ticks) {
-                chart.options.scales.x.ticks.color = textColor;
-            }
-            if (chart.options.scales.y.ticks) {
-                chart.options.scales.y.ticks.color = textColor;
-            }
-        }
-
-        // Handle radar charts
-        if (chart.options.scales.r) {
-            if (chart.options.scales.r.grid) {
-                chart.options.scales.r.grid.color = gridColor;
-            }
-            if (chart.options.scales.r.ticks) {
-                chart.options.scales.r.ticks.color = textColor;
-            }
-            if (chart.options.scales.r.pointLabels) {
-                chart.options.scales.r.pointLabels.color = textColor;
-            }
-        }
-    }
+    chart.options.plugins!.legend!.labels!.color = textColor;
+    chart.options.scales!.x!.grid!.color = gridColor;
+    chart.options.scales!.y!.grid!.color = gridColor;
+    chart.options.scales!.x!.ticks!.color = textColor;
+    chart.options.scales!.y!.ticks!.color = textColor;
 
     chart.update('none');
 };

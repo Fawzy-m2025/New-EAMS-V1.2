@@ -58,7 +58,6 @@ interface EnhancedChartProps {
     interactive?: boolean;
     exportable?: boolean;
     refreshable?: boolean;
-    loading?: boolean;
     customOptions?: Partial<ChartOptions>;
     onDataPointClick?: (dataPoint: any) => void;
     onChartUpdate?: (chart: ChartJS) => void;
@@ -79,7 +78,6 @@ export function EnhancedChart({
     interactive = true,
     exportable = true,
     refreshable = true,
-    loading = false,
     customOptions = {},
     onDataPointClick,
     onChartUpdate,
@@ -88,19 +86,16 @@ export function EnhancedChart({
     const { getThemeClasses } = useThemeColors();
     const themeClasses = getThemeClasses();
     const chartRef = useRef<ChartJS>(null);
-    const [internalLoading, setInternalLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const [currentPreset, setCurrentPreset] = useState<ChartPreset>(preset);
     const [currentColorScheme, setCurrentColorScheme] = useState<ColorScheme>(colorScheme);
     const [currentAnimation, setCurrentAnimation] = useState<AnimationType>(animation);
-
-    // Use external loading prop or internal loading state
-    const isChartLoading = loading || internalLoading;
 
     const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
     // Get chart options with theme integration
     const getOptions = useCallback((): ChartOptions => {
-        const baseOptions = getChartOptions(type, isDark);
+        const baseOptions = getChartOptions(type);
         const presetConfig = getChartPreset(currentPreset);
         const animationConfig = getAnimationConfig(currentAnimation);
 
@@ -120,7 +115,7 @@ export function EnhancedChart({
                 },
             },
         };
-    }, [type, currentPreset, currentAnimation, showLegend, customOptions, isDark]);
+    }, [type, currentPreset, currentAnimation, showLegend, customOptions]);
 
     // Apply color scheme to data
     const getColoredData = useCallback((): ChartData<any> => {
@@ -190,10 +185,10 @@ export function EnhancedChart({
 
     // Refresh chart data
     const refreshChart = useCallback(() => {
-        setInternalLoading(true);
+        setIsLoading(true);
         // Simulate data refresh
         setTimeout(() => {
-            setInternalLoading(false);
+            setIsLoading(false);
         }, 1000);
     }, []);
 
@@ -264,10 +259,10 @@ export function EnhancedChart({
                                     variant="ghost"
                                     size="sm"
                                     onClick={refreshChart}
-                                    disabled={isChartLoading}
+                                    disabled={isLoading}
                                     className="h-8 w-8 p-0"
                                 >
-                                    <RefreshCw className={cn("h-4 w-4", isChartLoading && "animate-spin")} />
+                                    <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
                                 </Button>
                             )}
                         </div>
@@ -335,7 +330,7 @@ export function EnhancedChart({
                     className="relative"
                     style={{ height: `${height}px` }}
                 >
-                    {isChartLoading && (
+                    {isLoading && (
                         <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-10">
                             <div className="flex items-center gap-2">
                                 <RefreshCw className="h-5 w-5 animate-spin" />

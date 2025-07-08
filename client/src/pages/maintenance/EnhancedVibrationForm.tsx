@@ -4685,13 +4685,13 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                             </TabsTrigger>
                                                             <TabsTrigger
                                                                 value="insights"
-                                                                className="relative data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-500 data-[state=active]:to-orange-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-lg"
+                                                                className="relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-300 rounded-lg hover:bg-muted/50"
                                                             >
                                                                 <div className="flex items-center gap-2">
                                                                     <Lightbulb className="h-4 w-4" />
                                                                     <span className="hidden sm:inline">Insights</span>
                                                                     {aiAssessment.insights.length > 0 && (
-                                                                        <Badge variant="secondary" className="ml-1 text-xs bg-yellow-200 text-yellow-800 animate-pulse">
+                                                                        <Badge variant="secondary" className="ml-1 text-xs bg-secondary text-secondary-foreground animate-pulse">
                                                                             {aiAssessment.insights.length}
                                                                         </Badge>
                                                                     )}
@@ -4699,13 +4699,13 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                             </TabsTrigger>
                                                             <TabsTrigger
                                                                 value="recommendations"
-                                                                className="relative data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-lg"
+                                                                className="relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-300 rounded-lg hover:bg-muted/50"
                                                             >
                                                                 <div className="flex items-center gap-2">
                                                                     <Target className="h-4 w-4" />
                                                                     <span className="hidden sm:inline">Actions</span>
                                                                     {aiAssessment.recommendations.length > 0 && (
-                                                                        <Badge variant="secondary" className="ml-1 text-xs bg-green-200 text-green-800 animate-pulse">
+                                                                        <Badge variant="secondary" className="ml-1 text-xs bg-secondary text-secondary-foreground animate-pulse">
                                                                             {aiAssessment.recommendations.length}
                                                                         </Badge>
                                                                     )}
@@ -4713,13 +4713,13 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                             </TabsTrigger>
                                                             <TabsTrigger
                                                                 value="trends"
-                                                                className="relative data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-lg"
+                                                                className="relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-300 rounded-lg hover:bg-muted/50"
                                                             >
                                                                 <div className="flex items-center gap-2">
                                                                     <TrendUp className="h-4 w-4" />
                                                                     <span className="hidden sm:inline">Trends</span>
                                                                     {aiAssessment.trends.length > 0 && (
-                                                                        <Badge variant="secondary" className="ml-1 text-xs bg-purple-200 text-purple-800 animate-pulse">
+                                                                        <Badge variant="secondary" className="ml-1 text-xs bg-secondary text-secondary-foreground animate-pulse">
                                                                             {aiAssessment.trends.length}
                                                                         </Badge>
                                                                     )}
@@ -4727,13 +4727,13 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                             </TabsTrigger>
                                                             <TabsTrigger
                                                                 value="maintenance"
-                                                                className="relative data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-red-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-lg"
+                                                                className="relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-300 rounded-lg hover:bg-muted/50"
                                                             >
                                                                 <div className="flex items-center gap-2">
                                                                     <Wrench className="h-4 w-4" />
                                                                     <span className="hidden sm:inline">Planning</span>
                                                                     {maintenancePlan && (
-                                                                        <Badge variant="secondary" className="ml-1 text-xs bg-orange-200 text-orange-800 animate-pulse">
+                                                                        <Badge variant="secondary" className="ml-1 text-xs bg-secondary text-secondary-foreground animate-pulse">
                                                                             {maintenancePlan.tasks.length}
                                                                         </Badge>
                                                                     )}
@@ -4741,13 +4741,13 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                             </TabsTrigger>
                                                             <TabsTrigger
                                                                 value="charts"
-                                                                className="relative data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-blue-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-lg"
+                                                                className="relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-300 rounded-lg hover:bg-muted/50"
                                                             >
                                                                 <div className="flex items-center gap-2">
                                                                     <BarChart className="h-4 w-4" />
                                                                     <span className="hidden sm:inline">Analytics</span>
                                                                     {chartConfigs.length > 0 && (
-                                                                        <Badge variant="secondary" className="ml-1 text-xs bg-indigo-200 text-indigo-800 animate-pulse">
+                                                                        <Badge variant="secondary" className="ml-1 text-xs bg-secondary text-secondary-foreground animate-pulse">
                                                                             {chartConfigs.length}
                                                                         </Badge>
                                                                     )}
@@ -4755,7 +4755,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                             </TabsTrigger>
                                                             <TabsTrigger
                                                                 value="health"
-                                                                className="relative data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-lg"
+                                                                className="relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-300 rounded-lg hover:bg-muted/50"
                                                             >
                                                                 <div className="flex items-center gap-2">
                                                                     <Activity className="h-4 w-4" />
@@ -4770,7 +4770,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                         {/* Hero Metrics Section */}
                                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                                             {/* Health Score Card */}
-                                                            <div className="group relative overflow-hidden bg-gradient-to-br from-emerald-500/90 via-green-500/90 to-teal-600/90 dark:from-emerald-600 dark:via-green-600 dark:to-teal-700 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 border border-emerald-400/20">
+                                                            <div className="group relative overflow-hidden bg-gradient-to-br from-emerald-500/90 via-green-500/90 to-teal-600/90 dark:from-emerald-600/90 dark:via-green-600/90 dark:to-teal-700/90 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 border border-emerald-400/20 dark:border-emerald-600/30">
                                                                 <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
                                                                 <div className="absolute bottom-0 left-0 w-16 h-16 bg-white/5 rounded-full -ml-8 -mb-8"></div>
                                                                 <div className="relative">
@@ -4902,20 +4902,20 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
 
                                                         {/* AI Maintenance Indicators */}
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                            <div className="p-4 bg-gradient-to-r from-red-50 to-pink-100 rounded-lg border border-red-200">
+                                                            <div className="p-4 bg-gradient-to-r from-red-50 to-pink-100 dark:from-red-950/30 dark:to-pink-950/30 rounded-lg border border-red-200 dark:border-red-600/30">
                                                                 <div className="flex items-center gap-3 mb-3">
-                                                                    <Settings className="h-5 w-5 text-red-600" />
-                                                                    <span className="font-semibold text-red-800">Maintenance Status</span>
+                                                                    <Settings className="h-5 w-5 text-red-600 dark:text-red-400" />
+                                                                    <span className="font-semibold text-red-800 dark:text-red-300">Maintenance Status</span>
                                                                 </div>
                                                                 <div className="space-y-2">
                                                                     <div className="flex items-center justify-between">
-                                                                        <span className="text-sm text-red-700">Maintenance Required:</span>
+                                                                        <span className="text-sm text-red-700 dark:text-red-300">Maintenance Required:</span>
                                                                         <Badge variant={aiAssessment.maintenanceRequired ? "destructive" : "default"}>
                                                                             {aiAssessment.maintenanceRequired ? "YES" : "NO"}
                                                                         </Badge>
                                                                     </div>
                                                                     <div className="flex items-center justify-between">
-                                                                        <span className="text-sm text-red-700">Immediate Action:</span>
+                                                                        <span className="text-sm text-red-700 dark:text-red-300">Immediate Action:</span>
                                                                         <Badge variant={aiAssessment.immediateAction ? "destructive" : "default"}>
                                                                             {aiAssessment.immediateAction ? "REQUIRED" : "NOT NEEDED"}
                                                                         </Badge>
@@ -4941,14 +4941,14 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                         </div>
 
                                                         {/* 🔍 VIBRATION DATA DEBUG PANEL */}
-                                                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                                                            <h4 className="font-semibold text-blue-800 mb-4 flex items-center gap-2">
+                                                        <div className="bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg border border-blue-200 dark:border-blue-600/30">
+                                                            <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-4 flex items-center gap-2">
                                                                 <Search className="h-4 w-4" />
                                                                 Vibration Data Debug Panel
                                                             </h4>
                                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                                                                 <div className="space-y-2">
-                                                                    <div className="font-medium text-blue-700">Pump NDE RMS:</div>
+                                                                    <div className="font-medium text-blue-700 dark:text-blue-300">Pump NDE RMS:</div>
                                                                     <div className="font-mono bg-white p-2 rounded border">
                                                                         {(() => {
                                                                             const nde = formValues.vibrationData?.pump?.nde || {};
@@ -5132,22 +5132,22 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                                     {aiAssessment.insights.map((insight, index) => (
                                                                         <div
                                                                             key={index}
-                                                                            className={`p-3 rounded-lg border-l-4 ${insight.type === 'critical' ? 'bg-red-50 border-red-400' :
-                                                                                insight.type === 'warning' ? 'bg-yellow-50 border-yellow-400' :
-                                                                                    insight.type === 'info' ? 'bg-blue-50 border-blue-400' :
-                                                                                        'bg-green-50 border-green-400'
+                                                                            className={`p-3 rounded-lg border-l-4 ${insight.type === 'critical' ? 'bg-red-50 dark:bg-red-950/30 border-red-400 dark:border-red-600' :
+                                                                                insight.type === 'warning' ? 'bg-yellow-50 dark:bg-yellow-950/30 border-yellow-400 dark:border-yellow-600' :
+                                                                                    insight.type === 'info' ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-400 dark:border-blue-600' :
+                                                                                        'bg-green-50 dark:bg-green-950/30 border-green-400 dark:border-green-600'
                                                                                 }`}
                                                                         >
                                                                             <div className="flex items-start justify-between">
                                                                                 <div className="flex-1">
-                                                                                    <div className="font-medium text-sm mb-1">
+                                                                                    <div className="font-medium text-sm mb-1 text-foreground">
                                                                                         {insight.title}
                                                                                     </div>
                                                                                     <div className="text-xs text-muted-foreground mb-2">
                                                                                         {insight.description}
                                                                                     </div>
                                                                                     {insight.actionable && insight.action && (
-                                                                                        <div className="text-xs font-medium text-blue-600">
+                                                                                        <div className="text-xs font-medium text-primary">
                                                                                             Action: {insight.action}
                                                                                         </div>
                                                                                     )}
@@ -5165,7 +5165,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                             </div>
                                                         ) : (
                                                             <div className="text-center py-8">
-                                                                <Lightbulb className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                                                                <Lightbulb className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                                                                 <p className="text-muted-foreground">No insights available</p>
                                                                 <p className="text-sm text-muted-foreground">AI insights will appear here after assessment</p>
                                                             </div>
@@ -5329,14 +5329,14 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                             </div>
 
                                                             {/* Health Trend Visualization */}
-                                                            <div className="p-6 bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg border">
-                                                                <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                                                                    <TrendingUp className="h-5 w-5" />
+                                                            <div className="p-6 bg-gradient-to-r from-muted/30 to-blue-50 dark:from-muted/20 dark:to-blue-950/30 rounded-lg border border-border">
+                                                                <h4 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                                                                    <TrendingUp className="h-5 w-5 text-primary" />
                                                                     Equipment Health Overview
                                                                 </h4>
                                                                 <div className="space-y-4">
                                                                     <div className="flex items-center justify-between">
-                                                                        <span className="text-sm font-medium">Overall Equipment Condition:</span>
+                                                                        <span className="text-sm font-medium text-foreground">Overall Equipment Condition:</span>
                                                                         <Badge
                                                                             variant={
                                                                                 aiAssessment.overallCondition === 'excellent' ? 'default' :
@@ -5350,20 +5350,20 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                                         </Badge>
                                                                     </div>
                                                                     <div className="flex items-center justify-between">
-                                                                        <span className="text-sm font-medium">Maintenance Required:</span>
+                                                                        <span className="text-sm font-medium text-foreground">Maintenance Required:</span>
                                                                         <Badge variant={aiAssessment.maintenanceRequired ? "destructive" : "default"}>
                                                                             {aiAssessment.maintenanceRequired ? "YES" : "NO"}
                                                                         </Badge>
                                                                     </div>
                                                                     <div className="flex items-center justify-between">
-                                                                        <span className="text-sm font-medium">Immediate Action Needed:</span>
+                                                                        <span className="text-sm font-medium text-foreground">Immediate Action Needed:</span>
                                                                         <Badge variant={aiAssessment.immediateAction ? "destructive" : "default"}>
                                                                             {aiAssessment.immediateAction ? "REQUIRED" : "NOT NEEDED"}
                                                                         </Badge>
                                                                     </div>
                                                                     <div className="flex items-center justify-between">
-                                                                        <span className="text-sm font-medium">Next Inspection:</span>
-                                                                        <span className="text-sm font-semibold">
+                                                                        <span className="text-sm font-medium text-foreground">Next Inspection:</span>
+                                                                        <span className="text-sm font-semibold text-foreground">
                                                                             {aiAssessment.nextInspectionDate ?
                                                                                 format(new Date(aiAssessment.nextInspectionDate), 'MMM dd, yyyy') :
                                                                                 'Not scheduled'
@@ -5374,16 +5374,16 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                             </div>
 
                                                             {/* Health Score Progress Bar */}
-                                                            <div className="p-4 bg-white rounded-lg border">
+                                                            <div className="p-4 bg-card rounded-lg border border-border">
                                                                 <div className="flex items-center justify-between mb-2">
-                                                                    <span className="text-sm font-medium">Health Score Progress</span>
-                                                                    <span className="text-sm font-bold">{aiAssessment.healthScore}%</span>
+                                                                    <span className="text-sm font-medium text-foreground">Health Score Progress</span>
+                                                                    <span className="text-sm font-bold text-foreground">{aiAssessment.healthScore}%</span>
                                                                 </div>
                                                                 <Progress
                                                                     value={aiAssessment.healthScore}
                                                                     className="h-3"
                                                                 />
-                                                                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                                                <div className="flex justify-between text-xs text-muted-foreground mt-1">
                                                                     <span>Critical</span>
                                                                     <span>Poor</span>
                                                                     <span>Fair</span>
@@ -5532,7 +5532,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                                             {maintenancePlan.tasks
                                                                                 .filter(task => taskFilter === 'all' || task.status === taskFilter)
                                                                                 .map((task, index) => (
-                                                                                    <div key={task.id} className="p-4 bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-300">
+                                                                                    <div key={task.id} className="p-4 bg-card rounded-xl border border-border hover:shadow-lg transition-all duration-300">
                                                                                         <div className="flex items-start justify-between">
                                                                                             <div className="flex-1">
                                                                                                 <div className="flex items-center gap-3 mb-2">
@@ -5549,13 +5549,13 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                                                                     <Badge variant="outline">
                                                                                                         {task.status.replace('-', ' ').toUpperCase()}
                                                                                                     </Badge>
-                                                                                                    <span className="text-sm text-gray-500">
+                                                                                                    <span className="text-sm text-muted-foreground">
                                                                                                         {task.workOrderNumber}
                                                                                                     </span>
                                                                                                 </div>
-                                                                                                <h5 className="font-semibold text-gray-900 mb-1">{task.title}</h5>
-                                                                                                <p className="text-sm text-gray-600 mb-3">{task.description}</p>
-                                                                                                <div className="flex items-center gap-4 text-xs text-gray-500">
+                                                                                                <h5 className="font-semibold text-foreground mb-1">{task.title}</h5>
+                                                                                                <p className="text-sm text-muted-foreground mb-3">{task.description}</p>
+                                                                                                <div className="flex items-center gap-4 text-xs text-muted-foreground">
                                                                                                     <span>📅 Due: {format(task.dueDate, 'MMM dd, yyyy')}</span>
                                                                                                     <span>⏱️ Est: {task.estimatedDuration}h</span>
                                                                                                     {task.failureMode && <span>🔧 {task.failureMode}</span>}
@@ -5577,9 +5577,9 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                                 </div>
                                                             ) : (
                                                                 <div className="text-center py-12">
-                                                                    <Wrench className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-                                                                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No Maintenance Plan Generated</h3>
-                                                                    <p className="text-gray-600 mb-4">Click "Generate Plan" to create an intelligent maintenance schedule based on AI assessment.</p>
+                                                                    <Wrench className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+                                                                    <h3 className="text-lg font-semibold text-foreground mb-2">No Maintenance Plan Generated</h3>
+                                                                    <p className="text-muted-foreground mb-4">Click "Generate Plan" to create an intelligent maintenance schedule based on AI assessment.</p>
                                                                 </div>
                                                             )}
                                                         </div>
@@ -5589,14 +5589,14 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                     <TabsContent value="charts" className="p-6 space-y-6">
                                                         <div className="space-y-6">
                                                             {/* Charts Header */}
-                                                            <div className="flex items-center justify-between p-6 bg-gradient-to-r from-indigo-500 to-blue-500 rounded-2xl text-white">
+                                                            <div className="flex items-center justify-between p-6 bg-gradient-to-r from-primary to-primary/80 rounded-2xl text-primary-foreground">
                                                                 <div className="flex items-center gap-4">
-                                                                    <div className="p-3 bg-white/20 rounded-xl">
+                                                                    <div className="p-3 bg-primary-foreground/20 rounded-xl">
                                                                         <BarChart className="h-8 w-8" />
                                                                     </div>
                                                                     <div>
                                                                         <h3 className="text-xl font-bold">Advanced Statistical & Technical Charts</h3>
-                                                                        <p className="text-indigo-100">Real-time Analytics • Predictive Visualizations • ISO 10816 Compliance</p>
+                                                                        <p className="text-primary-foreground/80">Real-time Analytics • Predictive Visualizations • ISO 10816 Compliance</p>
                                                                     </div>
                                                                 </div>
                                                                 <div className="flex items-center gap-2">

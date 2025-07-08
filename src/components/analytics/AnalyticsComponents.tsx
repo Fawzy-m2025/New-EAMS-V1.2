@@ -187,54 +187,6 @@ export const FailureAnalysisCard: React.FC<FailureAnalysisCardProps> = ({
                                 ))}
                             </ul>
                         </div>
-
-                        {/* Immediate Actions */}
-                        <div>
-                            <h4 className="font-semibold text-orange-700 mb-2 flex items-center gap-2">
-                                <Zap className="h-4 w-4" />
-                                Immediate Actions
-                            </h4>
-                            <ul className="space-y-1 text-sm">
-                                {analysis.immediateActions.map((action, index) => (
-                                    <li key={index} className="flex items-start gap-2">
-                                        <span className="text-orange-500 mt-1">•</span>
-                                        <span>{action}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-
-                        {/* Corrective Measures */}
-                        <div>
-                            <h4 className="font-semibold text-blue-700 mb-2 flex items-center gap-2">
-                                <Wrench className="h-4 w-4" />
-                                Corrective Measures
-                            </h4>
-                            <ul className="space-y-1 text-sm">
-                                {analysis.correctiveMeasures.map((measure, index) => (
-                                    <li key={index} className="flex items-start gap-2">
-                                        <span className="text-blue-500 mt-1">•</span>
-                                        <span>{measure}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-
-                        {/* Preventive Measures */}
-                        <div>
-                            <h4 className="font-semibold text-green-700 mb-2 flex items-center gap-2">
-                                <CheckCircle className="h-4 w-4" />
-                                Preventive Measures
-                            </h4>
-                            <ul className="space-y-1 text-sm">
-                                {analysis.preventiveMeasures.map((measure, index) => (
-                                    <li key={index} className="flex items-start gap-2">
-                                        <span className="text-green-500 mt-1">•</span>
-                                        <span>{measure}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
                     </div>
                 )}
 

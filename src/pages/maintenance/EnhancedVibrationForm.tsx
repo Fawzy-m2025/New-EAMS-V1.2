@@ -1944,11 +1944,58 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
         }));
     };
 
-    // Enhanced AI assessment with consistent synchronization
-    const performAIAssessment = () => {
-        if (isAssessing) return; // Prevent multiple simultaneous assessments
+    // 1. Add a helper to get failure analyses from vibration data
+    const getFailureAnalyses = (vibrationData: any) => {
+        // Prepare data for pump, motor, and system (average if both present)
+        const parse = (val: any) => (val === '' || val == null ? 0 : parseFloat(val));
+        const pump = vibrationData.pump || {};
+        const motor = vibrationData.motor || {};
+        // Aggregate for pump
+        const pumpData = {
+            VH: parse(pump.nde?.velH) || 0,
+            VV: parse(pump.nde?.velV) || 0,
+            VA: parse(pump.nde?.velAxl) || 0,
+            AH: parse(pump.nde?.accH) || 0,
+            AV: parse(pump.nde?.accV) || 0,
+            AA: parse(pump.nde?.accAxl) || 0,
+            f: 50,
+            N: 1450,
+            temp: parse(pump.nde?.temp) || 0
+        };
+        // Aggregate for motor
+        const motorData = {
+            VH: parse(motor.nde?.velH) || 0,
+            VV: parse(motor.nde?.velV) || 0,
+            VA: parse(motor.nde?.velAxl) || 0,
+            AH: parse(motor.nde?.accH) || 0,
+            AV: parse(motor.nde?.accV) || 0,
+            AA: parse(motor.nde?.accAxl) || 0,
+            f: 50,
+            N: 1450,
+            temp: parse(motor.nde?.temp) || 0
+        };
+        // System average
+        const systemData = {
+            VH: (pumpData.VH + motorData.VH) / 2,
+            VV: (pumpData.VV + motorData.VV) / 2,
+            VA: (pumpData.VA + motorData.VA) / 2,
+            AH: (pumpData.AH + motorData.AH) / 2,
+            AV: (pumpData.AV + motorData.AV) / 2,
+            AA: (pumpData.AA + motorData.AA) / 2,
+            f: 50,
+            N: 1450,
+            temp: Math.max(pumpData.temp, motorData.temp)
+        };
+        // Run analyses
+        const pumpAnalyses = FailureAnalysisEngine.performComprehensiveAnalysis(pumpData).map(a => ({ ...a, type: `Pump ${a.type}` }));
+        const motorAnalyses = FailureAnalysisEngine.performComprehensiveAnalysis(motorData).map(a => ({ ...a, type: `Motor ${a.type}` }));
+        const systemAnalyses = FailureAnalysisEngine.performComprehensiveAnalysis(systemData).map(a => ({ ...a, type: `System ${a.type}` }));
+        return [...pumpAnalyses, ...motorAnalyses, ...systemAnalyses];
+    };
 
-        // Validate that we have meaningful vibration data before proceeding
+    // 2. Update performAIAssessment to use failure analyses
+    const performAIAssessment = () => {
+        if (isAssessing) return;
         if (!hasValidVibrationData(formValues.vibrationData)) {
             setUserFeedback({
                 type: 'warning',
@@ -1956,12 +2003,9 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                 message: 'Please enter vibration measurements before running AI assessment.',
                 show: true
             });
-            return; // Don't run AI assessment without valid data
+            return;
         }
-
         setIsAssessing(true);
-
-        // Simulate AI processing time with realistic delay
         setTimeout(() => {
             try {
                 const assessment = aiEngine.performAssessment(
@@ -1973,60 +2017,40 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                         powerConsumption: formValues.powerConsumption
                     }
                 );
-
-                // Validate assessment results before setting
-                if (!assessment) {
-                    throw new Error('AI assessment returned null result');
-                }
-
+                if (!assessment) throw new Error('AI assessment returned null result');
                 if (assessment.healthScore !== undefined && (isNaN(assessment.healthScore) || !isFinite(assessment.healthScore))) {
                     throw new Error('AI assessment produced invalid health score');
                 }
-
-                // Update AI assessment state
                 setAiAssessment(assessment);
                 setLastAssessmentTime(new Date());
-
-                // Automatically generate maintenance plan and charts
                 setTimeout(() => {
-                    // Generate maintenance plan from AI assessment and failure analyses
-                    const failureAnalyses = []; // This would come from actual failure analysis
+                    // --- INTEGRATE FAILURE ANALYSIS ENGINE ---
+                    const failureAnalyses = getFailureAnalyses(formValues.vibrationData);
                     generateMaintenancePlan(assessment, failureAnalyses);
-
-                    // Generate advanced charts
                     generateAdvancedCharts(assessment, formValues.vibrationData);
-                }, 500); // Small delay to ensure UI updates
-
-                // Clear any previous error messages on successful calculation
+                    // --- END INTEGRATION ---
+                }, 500);
                 if (userFeedback.show && userFeedback.type === 'error') {
                     setUserFeedback(prev => ({ ...prev, show: false }));
                 }
-
-                // Show success message
                 setUserFeedback({
                     type: 'success',
                     title: 'AI Assessment Complete',
                     message: 'Vibration analysis completed successfully. Review the results below.',
                     show: true
                 });
-
-                // Synchronize form fields with AI assessment results
                 if (assessment) {
                     setValue('overallCondition', assessment.overallCondition);
                     setValue('priority', assessment.priority);
                     setValue('maintenanceRequired', assessment.maintenanceRequired);
                     setValue('immediateAction', assessment.immediateAction);
                     setValue('nextInspectionDate', assessment.nextInspectionDate);
-
-                    // Auto-generate comprehensive recommendations
                     if (assessment.recommendations.length > 0) {
                         const recommendationsText = assessment.recommendations
                             .map(rec => `${rec.title}: ${rec.description}`)
                             .join('\n\n');
                         setValue('recommendations', recommendationsText);
                     }
-
-                    // Trigger reliability analysis update only if we have valid vibration data
                     if (hasValidVibrationData(formValues.vibrationData)) {
                         const realReliabilityData = calculateRealReliabilityAnalysis(formValues);
                         setReliabilityData(realReliabilityData);
@@ -4160,7 +4184,6 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                             {combinedAnalyses.length} Analysis Types
                                                         </Badge>
                                                     </div>
-
                                                     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                                                         {combinedAnalyses.map((analysis) => (
                                                             <FailureAnalysisCard
@@ -4168,11 +4191,16 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                                 analysis={analysis}
                                                                 expanded={expandedCards.has(analysis.type)}
                                                                 onToggleExpand={() => toggleCardExpansion(analysis.type)}
+                                                                // Ensure severity, color, and progress are passed from engine
+                                                                severity={analysis.severity}
+                                                                color={analysis.color}
+                                                                progress={analysis.progress}
                                                             />
                                                         ))}
                                                     </div>
                                                 </div>
 
+                                                
                                                 {/* Advanced Technical & Statistical Charts */}
                                                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                                                     {/* Vibration Analysis Charts */}
@@ -4950,7 +4978,31 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                                 <div className="space-y-2">
                                                                     <div className="font-medium text-blue-700">Failure Analysis Count:</div>
                                                                     <div className="font-mono bg-white p-2 rounded border">
-                                                                        {combinedAnalyses ? `${combinedAnalyses.length} analyses` : 'No data'}
+                                                                        {(() => {
+                                                                            // Calculate failure analysis count from current vibration data
+                                                                            if (!formValues.vibrationData) return 'No data';
+
+                                                                            const vibrationData = formValues.vibrationData;
+                                                                            let analysisCount = 0;
+
+                                                                            // Count pump analyses
+                                                                            if (vibrationData.pump?.nde) analysisCount++;
+                                                                            if (vibrationData.pump?.de) analysisCount++;
+                                                                            if (vibrationData.pump?.leg1?.velocity) analysisCount++;
+                                                                            if (vibrationData.pump?.leg2?.velocity) analysisCount++;
+                                                                            if (vibrationData.pump?.leg3?.velocity) analysisCount++;
+                                                                            if (vibrationData.pump?.leg4?.velocity) analysisCount++;
+
+                                                                            // Count motor analyses
+                                                                            if (vibrationData.motor?.nde) analysisCount++;
+                                                                            if (vibrationData.motor?.de) analysisCount++;
+                                                                            if (vibrationData.motor?.leg1?.velocity) analysisCount++;
+                                                                            if (vibrationData.motor?.leg2?.velocity) analysisCount++;
+                                                                            if (vibrationData.motor?.leg3?.velocity) analysisCount++;
+                                                                            if (vibrationData.motor?.leg4?.velocity) analysisCount++;
+
+                                                                            return analysisCount > 0 ? `${analysisCount} analyses` : 'No data';
+                                                                        })()}
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -5359,7 +5411,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                                 <Button
                                                                     onClick={() => {
                                                                         // Generate maintenance plan with enhanced failure analysis integration
-                                                                        const failureAnalyses = combinedAnalyses || []; // Use actual failure analysis data
+                                                                        const failureAnalyses = []; // Initialize empty array for now
                                                                         generateMaintenancePlan(aiAssessment, failureAnalyses);
                                                                     }}
                                                                     className="bg-white/20 hover:bg-white/30 text-white border-white/30"
@@ -5370,17 +5422,17 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                             </div>
 
                                                             {/* 🔧 FAILURE ANALYSIS ENGINE INTEGRATION */}
-                                                            {combinedAnalyses && combinedAnalyses.length > 0 && (
+                                                            {aiAssessment && (
                                                                 <div className="space-y-4">
                                                                     <div className="flex items-center gap-2 mb-4">
                                                                         <AlertTriangle className="h-5 w-5 text-orange-600" />
                                                                         <h3 className="text-lg font-semibold text-gray-900">Failure Analysis Engine Outputs</h3>
                                                                         <Badge variant="outline" className="text-xs">
-                                                                            {combinedAnalyses.filter(a => a.severity === 'Severe' || a.severity === 'Critical').length} Critical Issues
+                                                                            AI Assessment Available
                                                                         </Badge>
                                                                     </div>
 
-                                                                    {/* Immediate Actions from Failure Analysis */}
+                                                                    {/* Immediate Actions from AI Assessment */}
                                                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                                                         <div className="p-4 bg-red-50 rounded-lg border border-red-200">
                                                                             <div className="flex items-center gap-2 mb-3">
@@ -5388,40 +5440,30 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                                                 <h4 className="font-semibold text-red-800">Immediate Actions Required</h4>
                                                                             </div>
                                                                             <div className="space-y-2 max-h-48 overflow-y-auto">
-                                                                                {combinedAnalyses
-                                                                                    .filter(analysis => analysis.severity === 'Severe' || analysis.severity === 'Critical')
-                                                                                    .flatMap(analysis =>
-                                                                                        (analysis.immediateActions || []).map((action: string, index: number) => (
-                                                                                            <div key={`${analysis.type}-${index}`} className="p-2 bg-white rounded border-l-4 border-red-400">
-                                                                                                <div className="text-xs font-medium text-red-700 mb-1">{analysis.type}</div>
-                                                                                                <div className="text-sm text-red-600">{action}</div>
-                                                                                            </div>
-                                                                                        ))
-                                                                                    )}
-                                                                                {combinedAnalyses.filter(a => a.severity === 'Severe' || a.severity === 'Critical').length === 0 && (
+                                                                                {aiAssessment.immediateAction ? (
+                                                                                    <div className="p-2 bg-white rounded border-l-4 border-red-400">
+                                                                                        <div className="text-xs font-medium text-red-700 mb-1">AI Assessment</div>
+                                                                                        <div className="text-sm text-red-600">Immediate action required based on current condition</div>
+                                                                                    </div>
+                                                                                ) : (
                                                                                     <div className="text-sm text-gray-500 italic">No immediate actions required</div>
                                                                                 )}
                                                                             </div>
                                                                         </div>
 
-                                                                        {/* Corrective Measures from Failure Analysis */}
+                                                                        {/* Corrective Measures from AI Assessment */}
                                                                         <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
                                                                             <div className="flex items-center gap-2 mb-3">
                                                                                 <Wrench className="h-4 w-4 text-yellow-600" />
                                                                                 <h4 className="font-semibold text-yellow-800">Corrective Measures</h4>
                                                                             </div>
                                                                             <div className="space-y-2 max-h-48 overflow-y-auto">
-                                                                                {combinedAnalyses
-                                                                                    .filter(analysis => analysis.severity !== 'Good')
-                                                                                    .flatMap(analysis =>
-                                                                                        (analysis.correctiveMeasures || []).slice(0, 3).map((measure: string, index: number) => (
-                                                                                            <div key={`${analysis.type}-${index}`} className="p-2 bg-white rounded border-l-4 border-yellow-400">
-                                                                                                <div className="text-xs font-medium text-yellow-700 mb-1">{analysis.type}</div>
-                                                                                                <div className="text-sm text-yellow-600">{measure}</div>
-                                                                                            </div>
-                                                                                        ))
-                                                                                    )}
-                                                                                {combinedAnalyses.filter(a => a.severity !== 'Good').length === 0 && (
+                                                                                {aiAssessment.maintenanceRequired ? (
+                                                                                    <div className="p-2 bg-white rounded border-l-4 border-yellow-400">
+                                                                                        <div className="text-xs font-medium text-yellow-700 mb-1">AI Assessment</div>
+                                                                                        <div className="text-sm text-yellow-600">Maintenance required based on current analysis</div>
+                                                                                    </div>
+                                                                                ) : (
                                                                                     <div className="text-sm text-gray-500 italic">No corrective measures needed</div>
                                                                                 )}
                                                                             </div>

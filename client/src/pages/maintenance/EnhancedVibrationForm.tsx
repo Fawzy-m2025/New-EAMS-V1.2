@@ -5242,9 +5242,9 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                                 </div>
                                                                 <div className="space-y-2 max-h-96 overflow-y-auto">
                                                                     {aiAssessment.trends.map((trend, index) => (
-                                                                        <div key={index} className="p-3 bg-white rounded-lg border">
+                                                                        <div key={index} className="p-3 bg-card rounded-lg border border-border">
                                                                             <div className="flex items-center justify-between mb-2">
-                                                                                <div className="font-medium text-sm">
+                                                                                <div className="font-medium text-sm text-foreground">
                                                                                     {trend.parameter}
                                                                                 </div>
                                                                                 <Badge
@@ -5283,48 +5283,48 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                         <div className="space-y-6">
                                                             {/* AI Health Assessment Summary */}
                                                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                                                <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-100 rounded-lg border border-blue-200">
+                                                                <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-100 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-lg border border-blue-200 dark:border-blue-600/30">
                                                                     <div className="flex items-center gap-3 mb-2">
-                                                                        <Activity className="h-5 w-5 text-blue-600" />
-                                                                        <span className="font-semibold text-blue-800">AI Health Score</span>
+                                                                        <Activity className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                                                        <span className="font-semibold text-blue-800 dark:text-blue-300">AI Health Score</span>
                                                                     </div>
-                                                                    <div className="text-3xl font-bold text-blue-700">
+                                                                    <div className="text-3xl font-bold text-blue-700 dark:text-blue-300">
                                                                         {aiAssessment.healthScore}%
                                                                     </div>
-                                                                    <div className="text-sm text-blue-600">AI Assessment</div>
+                                                                    <div className="text-sm text-blue-600 dark:text-blue-400">AI Assessment</div>
                                                                 </div>
 
-                                                                <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-100 rounded-lg border border-green-200">
+                                                                <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-100 dark:from-green-950/30 dark:to-emerald-950/30 rounded-lg border border-green-200 dark:border-green-600/30">
                                                                     <div className="flex items-center gap-3 mb-2">
-                                                                        <Shield className="h-5 w-5 text-green-600" />
-                                                                        <span className="font-semibold text-green-800">Confidence</span>
+                                                                        <Shield className="h-5 w-5 text-green-600 dark:text-green-400" />
+                                                                        <span className="font-semibold text-green-800 dark:text-green-300">Confidence</span>
                                                                     </div>
-                                                                    <div className="text-3xl font-bold text-green-700">
+                                                                    <div className="text-3xl font-bold text-green-700 dark:text-green-300">
                                                                         {aiAssessment.confidence}%
                                                                     </div>
-                                                                    <div className="text-sm text-green-600">Assessment Confidence</div>
+                                                                    <div className="text-sm text-green-600 dark:text-green-400">Assessment Confidence</div>
                                                                 </div>
 
-                                                                <div className="p-4 bg-gradient-to-r from-orange-50 to-red-100 rounded-lg border border-orange-200">
+                                                                <div className="p-4 bg-gradient-to-r from-orange-50 to-red-100 dark:from-orange-950/30 dark:to-red-950/30 rounded-lg border border-orange-200 dark:border-orange-600/30">
                                                                     <div className="flex items-center gap-3 mb-2">
-                                                                        <AlertTriangle className="h-5 w-5 text-orange-600" />
-                                                                        <span className="font-semibold text-orange-800">Risk Level</span>
+                                                                        <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                                                                        <span className="font-semibold text-orange-800 dark:text-orange-300">Risk Level</span>
                                                                     </div>
-                                                                    <div className="text-lg font-bold text-orange-700">
+                                                                    <div className="text-lg font-bold text-orange-700 dark:text-orange-300">
                                                                         {aiAssessment.riskLevel.toUpperCase()}
                                                                     </div>
-                                                                    <div className="text-sm text-orange-600">Current Risk</div>
+                                                                    <div className="text-sm text-orange-600 dark:text-orange-400">Current Risk</div>
                                                                 </div>
 
-                                                                <div className="p-4 bg-gradient-to-r from-purple-50 to-violet-100 rounded-lg border border-purple-200">
+                                                                <div className="p-4 bg-gradient-to-r from-purple-50 to-violet-100 dark:from-purple-950/30 dark:to-violet-950/30 rounded-lg border border-purple-200 dark:border-purple-600/30">
                                                                     <div className="flex items-center gap-3 mb-2">
-                                                                        <Target className="h-5 w-5 text-purple-600" />
-                                                                        <span className="font-semibold text-purple-800">Priority</span>
+                                                                        <Target className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                                                                        <span className="font-semibold text-purple-800 dark:text-purple-300">Priority</span>
                                                                     </div>
-                                                                    <div className="text-lg font-bold text-purple-700">
+                                                                    <div className="text-lg font-bold text-purple-700 dark:text-purple-300">
                                                                         {aiAssessment.priority.toUpperCase()}
                                                                     </div>
-                                                                    <div className="text-sm text-purple-600">Action Priority</div>
+                                                                    <div className="text-sm text-purple-600 dark:text-purple-400">Action Priority</div>
                                                                 </div>
                                                             </div>
 
@@ -5426,7 +5426,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                                 <div className="space-y-4">
                                                                     <div className="flex items-center gap-2 mb-4">
                                                                         <AlertTriangle className="h-5 w-5 text-orange-600" />
-                                                                        <h3 className="text-lg font-semibold text-gray-900">Failure Analysis Engine Outputs</h3>
+                                                                        <h3 className="text-lg font-semibold text-foreground">Failure Analysis Engine Outputs</h3>
                                                                         <Badge variant="outline" className="text-xs">
                                                                             AI Assessment Available
                                                                         </Badge>
@@ -5434,37 +5434,37 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
 
                                                                     {/* Immediate Actions from AI Assessment */}
                                                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                                                        <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                                                                        <div className="p-4 bg-red-50 dark:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-600/30">
                                                                             <div className="flex items-center gap-2 mb-3">
                                                                                 <AlertCircle className="h-4 w-4 text-red-600" />
-                                                                                <h4 className="font-semibold text-red-800">Immediate Actions Required</h4>
+                                                                                <h4 className="font-semibold text-red-800 dark:text-red-300">Immediate Actions Required</h4>
                                                                             </div>
                                                                             <div className="space-y-2 max-h-48 overflow-y-auto">
                                                                                 {aiAssessment.immediateAction ? (
-                                                                                    <div className="p-2 bg-white rounded border-l-4 border-red-400">
-                                                                                        <div className="text-xs font-medium text-red-700 mb-1">AI Assessment</div>
-                                                                                        <div className="text-sm text-red-600">Immediate action required based on current condition</div>
+                                                                                    <div className="p-2 bg-background rounded border-l-4 border-red-400">
+                                                                                        <div className="text-xs font-medium text-red-700 dark:text-red-400 mb-1">AI Assessment</div>
+                                                                                        <div className="text-sm text-red-600 dark:text-red-400">Immediate action required based on current condition</div>
                                                                                     </div>
                                                                                 ) : (
-                                                                                    <div className="text-sm text-gray-500 italic">No immediate actions required</div>
+                                                                                    <div className="text-sm text-muted-foreground italic">No immediate actions required</div>
                                                                                 )}
                                                                             </div>
                                                                         </div>
 
                                                                         {/* Corrective Measures from AI Assessment */}
-                                                                        <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                                                                        <div className="p-4 bg-yellow-50 dark:bg-yellow-950/30 rounded-lg border border-yellow-200 dark:border-yellow-600/30">
                                                                             <div className="flex items-center gap-2 mb-3">
                                                                                 <Wrench className="h-4 w-4 text-yellow-600" />
-                                                                                <h4 className="font-semibold text-yellow-800">Corrective Measures</h4>
+                                                                                <h4 className="font-semibold text-yellow-800 dark:text-yellow-300">Corrective Measures</h4>
                                                                             </div>
                                                                             <div className="space-y-2 max-h-48 overflow-y-auto">
                                                                                 {aiAssessment.maintenanceRequired ? (
-                                                                                    <div className="p-2 bg-white rounded border-l-4 border-yellow-400">
-                                                                                        <div className="text-xs font-medium text-yellow-700 mb-1">AI Assessment</div>
-                                                                                        <div className="text-sm text-yellow-600">Maintenance required based on current analysis</div>
+                                                                                    <div className="p-2 bg-background rounded border-l-4 border-yellow-400">
+                                                                                        <div className="text-xs font-medium text-yellow-700 dark:text-yellow-400 mb-1">AI Assessment</div>
+                                                                                        <div className="text-sm text-yellow-600 dark:text-yellow-400">Maintenance required based on current analysis</div>
                                                                                     </div>
                                                                                 ) : (
-                                                                                    <div className="text-sm text-gray-500 italic">No corrective measures needed</div>
+                                                                                    <div className="text-sm text-muted-foreground italic">No corrective measures needed</div>
                                                                                 )}
                                                                             </div>
                                                                         </div>
@@ -5476,36 +5476,36 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                                 <div className="space-y-6">
                                                                     {/* Plan Overview */}
                                                                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                                                        <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-xl border border-blue-200">
+                                                                        <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl border border-blue-200 dark:border-blue-600/30">
                                                                             <div className="flex items-center gap-3 mb-2">
-                                                                                <ClipboardList className="h-5 w-5 text-blue-600" />
-                                                                                <span className="font-semibold text-blue-800">Total Tasks</span>
+                                                                                <ClipboardList className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                                                                <span className="font-semibold text-blue-800 dark:text-blue-300">Total Tasks</span>
                                                                             </div>
-                                                                            <div className="text-2xl font-bold text-blue-700">{maintenancePlan.tasks.length}</div>
+                                                                            <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">{maintenancePlan.tasks.length}</div>
                                                                         </div>
 
-                                                                        <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-100 rounded-xl border border-green-200">
+                                                                        <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-950/30 dark:to-emerald-950/30 rounded-xl border border-green-200 dark:border-green-600/30">
                                                                             <div className="flex items-center gap-3 mb-2">
-                                                                                <Timer className="h-5 w-5 text-green-600" />
-                                                                                <span className="font-semibold text-green-800">Est. Hours</span>
+                                                                                <Timer className="h-5 w-5 text-green-600 dark:text-green-400" />
+                                                                                <span className="font-semibold text-green-800 dark:text-green-300">Est. Hours</span>
                                                                             </div>
-                                                                            <div className="text-2xl font-bold text-green-700">{maintenancePlan.totalEstimatedHours}</div>
+                                                                            <div className="text-2xl font-bold text-green-700 dark:text-green-300">{maintenancePlan.totalEstimatedHours}</div>
                                                                         </div>
 
-                                                                        <div className="p-4 bg-gradient-to-br from-purple-50 to-violet-100 rounded-xl border border-purple-200">
+                                                                        <div className="p-4 bg-gradient-to-br from-purple-50 to-violet-100 dark:from-purple-950/30 dark:to-violet-950/30 rounded-xl border border-purple-200 dark:border-purple-600/30">
                                                                             <div className="flex items-center gap-3 mb-2">
-                                                                                <Target className="h-5 w-5 text-purple-600" />
-                                                                                <span className="font-semibold text-purple-800">Progress</span>
+                                                                                <Target className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                                                                                <span className="font-semibold text-purple-800 dark:text-purple-300">Progress</span>
                                                                             </div>
-                                                                            <div className="text-2xl font-bold text-purple-700">{maintenancePlan.completionPercentage}%</div>
+                                                                            <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">{maintenancePlan.completionPercentage}%</div>
                                                                         </div>
 
-                                                                        <div className="p-4 bg-gradient-to-br from-orange-50 to-red-100 rounded-xl border border-orange-200">
+                                                                        <div className="p-4 bg-gradient-to-br from-orange-50 to-red-100 dark:from-orange-950/30 dark:to-red-950/30 rounded-xl border border-orange-200 dark:border-orange-600/30">
                                                                             <div className="flex items-center gap-3 mb-2">
-                                                                                <AlertTriangle className="h-5 w-5 text-orange-600" />
-                                                                                <span className="font-semibold text-orange-800">RUL Days</span>
+                                                                                <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                                                                                <span className="font-semibold text-orange-800 dark:text-orange-300">RUL Days</span>
                                                                             </div>
-                                                                            <div className="text-2xl font-bold text-orange-700">
+                                                                            <div className="text-2xl font-bold text-orange-700 dark:text-orange-300">
                                                                                 {maintenancePlan.rulPrediction?.estimatedRUL || 'N/A'}
                                                                             </div>
                                                                         </div>
@@ -5514,7 +5514,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                                     {/* Task List */}
                                                                     <div className="space-y-4">
                                                                         <div className="flex items-center justify-between">
-                                                                            <h4 className="text-lg font-semibold">Maintenance Tasks</h4>
+                                                                            <h4 className="text-lg font-semibold text-foreground">Maintenance Tasks</h4>
                                                                             <Select value={taskFilter} onValueChange={(value: any) => setTaskFilter(value)}>
                                                                                 <SelectTrigger className="w-40">
                                                                                     <SelectValue />

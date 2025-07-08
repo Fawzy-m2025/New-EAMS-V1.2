@@ -165,7 +165,7 @@ export const FailureAnalysisCard: React.FC<FailureAnalysisCardProps> = ({
                     </div>
                     <div className="text-center p-2 bg-red-50 rounded">
                         <div className="font-semibold text-red-700">Severe</div>
-                        <div className="text-red-600">> {analysis.threshold.severe}</div>
+                        <div className="text-red-600">{'>'} {analysis.threshold.severe}</div>
                     </div>
                 </div>
 

@@ -1,9 +1,0 @@
-{
-  "extends": "./tsconfig.app.json",
-  "compilerOptions": {
-    "composite": true,
-    "lib": [],
-    "types": ["node", "jsdom", "@testing-library/jest-dom"]
-    },
-    "include": ["vite.config.ts", "src/components/ui/button.test.tsx"]
-  }

@@ -1,0 +1,33 @@
+Please update the Enhanced Vibration Form's Analytics and Review tab components in `src/pages/maintenance/EnhancedVibrationForm.tsx` to achieve complete visual consistency with the project's established design system. Based on the conversation history, this form should match the Asset Forms design patterns and support the project's theme selection system.
+
+**Specific Requirements:**
+
+1. **Theme System Integration:**
+   - Apply the project's established color variables and theme system to all Analytics and Review tab elements
+   - Ensure proper light/dark mode support with automatic theme switching
+   - Use the same color style system that's implemented in other Asset Forms throughout the EAMS application
+
+2. **Component-Level Theming Updates:**
+   - Update all chart containers, cards, buttons, text elements, and background colors
+   - Apply consistent styling to the AI Assessment Center components while preserving the full horizontal space layout
+   - Maintain the tabbed/sectioned layout with unified components that eliminate redundancy
+   - Ensure Chart.js visualizations (statistical charts for vibration analysis) follow the project's color scheme
+
+3. **Design Consistency:**
+   - Match the exact styling patterns, spacing, and visual hierarchy used in other Asset Forms
+   - Preserve the professional gradients and modern animations previously implemented
+   - Maintain the optimized chart layouts and responsive design
+   - Keep the current AI Assessment Center functionality including real-time synchronization with vibration measurements
+
+4. **Functional Preservation:**
+   - Maintain all existing functionality including automatic redirect behavior when vibration readings are entered
+   - Preserve placeholder messaging patterns when no input data exists
+   - Keep the real-time synchronization between Step 3 vibration measurements and Step 4 analytics
+   - Ensure the AI assessment results remain consistent across all UI components
+
+5. **Technical Implementation:**
+   - Focus only on visual theming updates without modifying the underlying logic or data flow
+   - Ensure mobile-responsive design patterns are maintained
+   - Verify that the enhanced theming works properly with the React 18.3.1 + TypeScript architecture and Context + Custom Hooks state management
+
+**Expected Outcome:** Complete visual consistency with the EAMS application's design system while preserving all existing Enhanced Vibration Form functionality, user experience improvements, and the full-screen display mode preference.

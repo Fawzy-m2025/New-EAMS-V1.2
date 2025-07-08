@@ -3999,75 +3999,75 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                             return (
                                                 <div className="space-y-6">
                                                     {/* Main Placeholder Card */}
-                                                    <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+                                                    <Card className="bg-gradient-to-r from-background/80 to-muted/50 border-border dark:border-border">
                                                         <CardHeader className="text-center">
                                                             <CardTitle className="flex flex-col items-center gap-4">
-                                                                <div className="p-4 bg-blue-500 rounded-full">
-                                                                    <BarChart3 className="h-8 w-8 text-white" />
+                                                                <div className="p-4 bg-primary rounded-full shadow-lg">
+                                                                    <BarChart3 className="h-8 w-8 text-primary-foreground" />
                                                                 </div>
                                                                 <div>
-                                                                    <h3 className="text-2xl font-bold text-blue-900">Analytics Ready</h3>
-                                                                    <p className="text-blue-700 mt-2">Complete vibration measurements to generate comprehensive analysis</p>
+                                                                    <h3 className="text-2xl font-bold text-foreground">Analytics Ready</h3>
+                                                                    <p className="text-muted-foreground mt-2">Complete vibration measurements to generate comprehensive analysis</p>
                                                                 </div>
                                                             </CardTitle>
                                                         </CardHeader>
                                                         <CardContent className="space-y-6">
                                                             <div className="text-center">
-                                                                <p className="text-lg text-blue-800 mb-4">
+                                                                <p className="text-lg text-foreground mb-4">
                                                                     Enter vibration measurements in <strong>Step 3</strong> to unlock:
                                                                 </p>
                                                             </div>
 
                                                             {/* Feature Preview Grid */}
                                                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                                                <div className="p-4 bg-white rounded-lg shadow-sm border-l-4 border-purple-400">
+                                                                <div className="p-4 bg-card rounded-lg shadow-sm border-l-4 border-primary/60">
                                                                     <div className="flex items-center gap-3 mb-2">
-                                                                        <Brain className="h-5 w-5 text-purple-500" />
-                                                                        <span className="font-semibold text-purple-900">Unified AI Assessment</span>
+                                                                        <Brain className="h-5 w-5 text-primary" />
+                                                                        <span className="font-semibold text-foreground">Unified AI Assessment</span>
                                                                     </div>
-                                                                    <p className="text-sm text-gray-600">
+                                                                    <p className="text-sm text-muted-foreground">
                                                                         Complete AI-powered analysis center with all assessment features in one location
                                                                     </p>
                                                                 </div>
 
-                                                                <div className="p-4 bg-white rounded-lg shadow-sm border-l-4 border-red-400">
+                                                                <div className="p-4 bg-card rounded-lg shadow-sm border-l-4 border-destructive/60">
                                                                     <div className="flex items-center gap-3 mb-2">
-                                                                        <AlertTriangle className="h-5 w-5 text-red-500" />
-                                                                        <span className="font-semibold text-red-900">Failure Analysis</span>
+                                                                        <AlertTriangle className="h-5 w-5 text-destructive" />
+                                                                        <span className="font-semibold text-foreground">Failure Analysis</span>
                                                                     </div>
-                                                                    <p className="text-sm text-gray-600">
+                                                                    <p className="text-sm text-muted-foreground">
                                                                         Comprehensive analysis of 17+ failure modes including unbalance, misalignment, and bearing defects
                                                                     </p>
                                                                 </div>
 
-                                                                <div className="p-4 bg-white rounded-lg shadow-sm border-l-4 border-green-400">
+                                                                <div className="p-4 bg-card rounded-lg shadow-sm border-l-4 border-emerald-500/60">
                                                                     <div className="flex items-center gap-3 mb-2">
-                                                                        <TrendingUp className="h-5 w-5 text-green-500" />
-                                                                        <span className="font-semibold text-green-900">Health Dashboard</span>
+                                                                        <TrendingUp className="h-5 w-5 text-emerald-500" />
+                                                                        <span className="font-semibold text-foreground">Health Dashboard</span>
                                                                     </div>
-                                                                    <p className="text-sm text-gray-600">
+                                                                    <p className="text-sm text-muted-foreground">
                                                                         Master health assessment with combined scoring and maintenance recommendations
                                                                     </p>
                                                                 </div>
 
-                                                                <div className="p-4 bg-white rounded-lg shadow-sm border-l-4 border-orange-400">
+                                                                <div className="p-4 bg-card rounded-lg shadow-sm border-l-4 border-amber-500/60">
                                                                     <div className="flex items-center gap-3 mb-2">
-                                                                        <BarChart3 className="h-5 w-5 text-orange-500" />
-                                                                        <span className="font-semibold text-orange-900">Reliability Metrics</span>
+                                                                        <BarChart3 className="h-5 w-5 text-amber-500" />
+                                                                        <span className="font-semibold text-foreground">Reliability Metrics</span>
                                                                     </div>
-                                                                    <p className="text-sm text-gray-600">
+                                                                    <p className="text-sm text-muted-foreground">
                                                                         MTBF, RUL predictions, Weibull analysis, and ISO compliance metrics
                                                                     </p>
                                                                 </div>
                                                             </div>
 
                                                             {/* Instructions */}
-                                                            <div className="bg-blue-100 rounded-lg p-4">
-                                                                <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
-                                                                    <Info className="h-4 w-4" />
+                                                            <div className="bg-muted/50 dark:bg-muted/30 rounded-lg p-4 border border-border">
+                                                                <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                                                                    <Info className="h-4 w-4 text-primary" />
                                                                     How to Generate Analytics
                                                                 </h4>
-                                                                <ol className="text-sm text-blue-800 space-y-1">
+                                                                <ol className="text-sm text-muted-foreground space-y-1">
                                                                     <li>1. Navigate back to <strong>Step 3: Vibration Measurements</strong></li>
                                                                     <li>2. Enter vibration readings for pump and/or motor equipment</li>
                                                                     <li>3. Include at least one non-zero measurement (NDE/DE or Leg readings)</li>
@@ -4080,7 +4080,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                                 <Button
                                                                     type="button"
                                                                     onClick={() => setCurrentStep(2)}
-                                                                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
+                                                                    className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2"
                                                                 >
                                                                     <ArrowLeft className="h-4 w-4 mr-2" />
                                                                     Go to Step 3: Vibration Measurements
@@ -4355,15 +4355,15 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                 </div>
 
                                                 {/* Statistical Analysis Dashboard */}
-                                                <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+                                                <Card className="bg-gradient-to-r from-background/90 to-muted/60 border-border dark:border-border">
                                                     <CardHeader>
                                                         <CardTitle className="flex items-center gap-3">
-                                                            <div className="p-2 bg-green-500 rounded-lg">
+                                                            <div className="p-2 bg-emerald-500 rounded-lg">
                                                                 <TrendingUp className="h-5 w-5 text-white" />
                                                             </div>
                                                             <div>
-                                                                <h3 className="text-lg font-bold text-green-900">Statistical Analysis Dashboard</h3>
-                                                                <p className="text-sm text-green-700">Advanced statistical metrics and reliability indicators</p>
+                                                                <h3 className="text-lg font-bold text-foreground">Statistical Analysis Dashboard</h3>
+                                                                <p className="text-sm text-muted-foreground">Advanced statistical metrics and reliability indicators</p>
                                                             </div>
                                                         </CardTitle>
                                                     </CardHeader>
@@ -4372,53 +4372,53 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                             <>
                                                                 {/* Key Reliability Metrics */}
                                                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                                                    <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                                                                        <div className="text-2xl font-bold text-blue-900">
+                                                                    <div className="text-center p-4 bg-card rounded-lg shadow-sm border border-border">
+                                                                        <div className="text-2xl font-bold text-primary">
                                                                             {safeDisplay(reliabilityData.reliability_metrics.mtbf, 0)}h
                                                                         </div>
-                                                                        <div className="text-xs text-blue-600">MTBF</div>
-                                                                        <div className="text-xs text-gray-500">Mean Time Between Failures</div>
+                                                                        <div className="text-xs text-primary/80">MTBF</div>
+                                                                        <div className="text-xs text-muted-foreground">Mean Time Between Failures</div>
                                                                     </div>
-                                                                    <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                                                                        <div className="text-2xl font-bold text-green-900">
+                                                                    <div className="text-center p-4 bg-card rounded-lg shadow-sm border border-border">
+                                                                        <div className="text-2xl font-bold text-emerald-600">
                                                                             {safeDisplay(reliabilityData.reliability_metrics.availability, 1)}%
                                                                         </div>
-                                                                        <div className="text-xs text-green-600">Availability</div>
-                                                                        <div className="text-xs text-gray-500">System Uptime</div>
+                                                                        <div className="text-xs text-emerald-600">Availability</div>
+                                                                        <div className="text-xs text-muted-foreground">System Uptime</div>
                                                                     </div>
-                                                                    <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                                                                        <div className="text-2xl font-bold text-purple-900">
+                                                                    <div className="text-center p-4 bg-card rounded-lg shadow-sm border border-border">
+                                                                        <div className="text-2xl font-bold text-violet-600">
                                                                             {safeDisplay(reliabilityData.rul_prediction.remaining_useful_life, 0)}h
                                                                         </div>
-                                                                        <div className="text-xs text-purple-600">RUL</div>
-                                                                        <div className="text-xs text-gray-500">Remaining Useful Life</div>
+                                                                        <div className="text-xs text-violet-600">RUL</div>
+                                                                        <div className="text-xs text-muted-foreground">Remaining Useful Life</div>
                                                                     </div>
-                                                                    <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                                                                        <div className="text-2xl font-bold text-orange-900">
+                                                                    <div className="text-center p-4 bg-card rounded-lg shadow-sm border border-border">
+                                                                        <div className="text-2xl font-bold text-amber-600">
                                                                             {safeDisplay(reliabilityData.weibull_analysis.beta, 2)}
                                                                         </div>
-                                                                        <div className="text-xs text-orange-600">β (Beta)</div>
-                                                                        <div className="text-xs text-gray-500">Weibull Shape</div>
+                                                                        <div className="text-xs text-amber-600">β (Beta)</div>
+                                                                        <div className="text-xs text-muted-foreground">Weibull Shape</div>
                                                                     </div>
                                                                 </div>
 
                                                                 {/* Failure Mode Analysis */}
                                                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                                                     <div>
-                                                                        <h4 className="font-semibold text-green-800 mb-3 flex items-center gap-2">
-                                                                            <AlertTriangle className="h-4 w-4" />
+                                                                        <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                                                                            <AlertTriangle className="h-4 w-4 text-destructive" />
                                                                             Failure Mode Analysis
                                                                         </h4>
                                                                         <div className="space-y-2">
                                                                             {reliabilityData.failure_modes.map((mode: any, index: number) => (
-                                                                                <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg">
+                                                                                <div key={index} className="flex items-center justify-between p-3 bg-card rounded-lg border border-border">
                                                                                     <div>
-                                                                                        <div className="font-medium text-sm">{mode.mode}</div>
-                                                                                        <div className="text-xs text-gray-500">RPN: {safeDisplay(mode.rpn, 0)}</div>
+                                                                                        <div className="font-medium text-sm text-foreground">{mode.mode}</div>
+                                                                                        <div className="text-xs text-muted-foreground">RPN: {safeDisplay(mode.rpn, 0)}</div>
                                                                                     </div>
                                                                                     <div className="text-right">
-                                                                                        <div className="text-sm font-bold">{safeDisplay(mode.probability * 100, 1)}%</div>
-                                                                                        <div className="text-xs text-gray-500">Probability</div>
+                                                                                        <div className="text-sm font-bold text-destructive">{safeDisplay(mode.probability * 100, 1)}%</div>
+                                                                                        <div className="text-xs text-muted-foreground">Probability</div>
                                                                                     </div>
                                                                                 </div>
                                                                             ))}
@@ -4426,31 +4426,31 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                                     </div>
 
                                                                     <div>
-                                                                        <h4 className="font-semibold text-green-800 mb-3 flex items-center gap-2">
-                                                                            <Target className="h-4 w-4" />
+                                                                        <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                                                                            <Target className="h-4 w-4 text-primary" />
                                                                             Maintenance Optimization
                                                                         </h4>
                                                                         <div className="space-y-3">
-                                                                            <div className="p-3 bg-white rounded-lg">
+                                                                            <div className="p-3 bg-card rounded-lg border border-border">
                                                                                 <div className="flex items-center justify-between mb-2">
-                                                                                    <span className="text-sm font-medium">Optimal Interval</span>
-                                                                                    <span className="text-sm font-bold">{safeDisplay(reliabilityData.maintenance_optimization.optimal_interval, 0, 'N/A', 'optimal interval')}h</span>
+                                                                                    <span className="text-sm font-medium text-foreground">Optimal Interval</span>
+                                                                                    <span className="text-sm font-bold text-primary">{safeDisplay(reliabilityData.maintenance_optimization.optimal_interval, 0, 'N/A', 'optimal interval')}h</span>
                                                                                 </div>
-                                                                                <div className="text-xs text-gray-500">Recommended maintenance frequency</div>
+                                                                                <div className="text-xs text-muted-foreground">Recommended maintenance frequency</div>
                                                                             </div>
-                                                                            <div className="p-3 bg-white rounded-lg">
+                                                                            <div className="p-3 bg-card rounded-lg border border-border">
                                                                                 <div className="flex items-center justify-between mb-2">
-                                                                                    <span className="text-sm font-medium">Cost Savings</span>
-                                                                                    <span className="text-sm font-bold text-green-600">${reliabilityData.maintenance_optimization.cost_savings.toLocaleString()}</span>
+                                                                                    <span className="text-sm font-medium text-foreground">Cost Savings</span>
+                                                                                    <span className="text-sm font-bold text-emerald-600">${reliabilityData.maintenance_optimization.cost_savings.toLocaleString()}</span>
                                                                                 </div>
-                                                                                <div className="text-xs text-gray-500">Annual projected savings</div>
+                                                                                <div className="text-xs text-muted-foreground">Annual projected savings</div>
                                                                             </div>
-                                                                            <div className="p-3 bg-white rounded-lg">
-                                                                                <div className="text-sm font-medium mb-2">Recommended Actions</div>
-                                                                                <ul className="text-xs text-gray-600 space-y-1">
+                                                                            <div className="p-3 bg-card rounded-lg border border-border">
+                                                                                <div className="text-sm font-medium mb-2 text-foreground">Recommended Actions</div>
+                                                                                <ul className="text-xs text-muted-foreground space-y-1">
                                                                                     {reliabilityData.maintenance_optimization.recommended_actions.map((action: string, index: number) => (
                                                                                         <li key={index} className="flex items-start gap-1">
-                                                                                            <span className="text-green-500 mt-0.5">•</span>
+                                                                                            <span className="text-emerald-500 mt-0.5">•</span>
                                                                                             <span>{action}</span>
                                                                                         </li>
                                                                                     ))}
@@ -4478,10 +4478,10 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                     {/* Equipment Summary and Vibration Analysis - Compact Layout */}
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                                         {/* Equipment Summary */}
-                                        <Card>
-                                            <CardHeader>
-                                                <CardTitle className="flex items-center gap-2">
-                                                    <BarChart3 className="h-4 w-4" />
+                                        <Card className="border-border dark:border-border">
+                                            <CardHeader className="bg-muted/30 rounded-t-lg">
+                                                <CardTitle className="flex items-center gap-2 text-foreground">
+                                                    <BarChart3 className="h-4 w-4 text-primary" />
                                                     Equipment Summary
                                                 </CardTitle>
                                             </CardHeader>
@@ -4489,19 +4489,19 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                 <div className="space-y-3">
                                                     <div>
                                                         <Label className="text-xs text-muted-foreground">Selected Equipment</Label>
-                                                        <p className="text-sm font-medium">{selectedEquipment.length} equipment selected</p>
+                                                        <p className="text-sm font-medium text-foreground">{selectedEquipment.length} equipment selected</p>
                                                     </div>
                                                     <div>
                                                         <Label className="text-xs text-muted-foreground">Measurement Date</Label>
-                                                        <p className="text-sm">{formValues.date} at {formValues.time}</p>
+                                                        <p className="text-sm text-foreground">{formValues.date} at {formValues.time}</p>
                                                     </div>
                                                     <div>
                                                         <Label className="text-xs text-muted-foreground">Operator</Label>
-                                                        <p className="text-sm">{formValues.operator || 'Not specified'}</p>
+                                                        <p className="text-sm text-foreground">{formValues.operator || 'Not specified'}</p>
                                                     </div>
                                                     <div>
                                                         <Label className="text-xs text-muted-foreground">Shift</Label>
-                                                        <p className="text-sm">{formValues.shift || 'Not specified'}</p>
+                                                        <p className="text-sm text-foreground">{formValues.shift || 'Not specified'}</p>
                                                     </div>
                                                 </div>
 
@@ -4512,8 +4512,8 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                         {selectedEquipment.map(equipmentId => {
                                                             const equipment = equipmentOptions.find(eq => eq.id === equipmentId);
                                                             return (
-                                                                <div key={equipmentId} className="text-xs p-2 bg-muted rounded">
-                                                                    <span className="font-medium">{equipment?.name}</span>
+                                                                <div key={equipmentId} className="text-xs p-2 bg-muted/50 rounded border border-border">
+                                                                    <span className="font-medium text-foreground">{equipment?.name}</span>
                                                                     <span className="text-muted-foreground ml-2">({equipment?.category})</span>
                                                                 </div>
                                                             );
@@ -4524,10 +4524,10 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                         </Card>
 
                                         {/* Vibration Analysis */}
-                                        <Card>
-                                            <CardHeader>
-                                                <CardTitle className="flex items-center gap-2">
-                                                    <Waves className="h-4 w-4" />
+                                        <Card className="border-border dark:border-border">
+                                            <CardHeader className="bg-muted/30 rounded-t-lg">
+                                                <CardTitle className="flex items-center gap-2 text-foreground">
+                                                    <Waves className="h-4 w-4 text-blue-500" />
                                                     Vibration Analysis
                                                 </CardTitle>
                                             </CardHeader>
@@ -4535,7 +4535,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>
                                                         <Label className="text-xs text-muted-foreground">Pump NDE Velocity</Label>
-                                                        <p className="text-sm font-medium">
+                                                        <p className="text-sm font-medium text-foreground">
                                                             {formValues.vibrationData?.pump?.nde?.velH || 'N/A'} mm/s (H)
                                                         </p>
                                                         <p className="text-xs text-muted-foreground">
@@ -4544,7 +4544,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                     </div>
                                                     <div>
                                                         <Label className="text-xs text-muted-foreground">Motor NDE Velocity</Label>
-                                                        <p className="text-sm font-medium">
+                                                        <p className="text-sm font-medium text-foreground">
                                                             {formValues.vibrationData?.motor?.nde?.velH || 'N/A'} mm/s (H)
                                                         </p>
                                                         <p className="text-xs text-muted-foreground">
@@ -4553,7 +4553,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                     </div>
                                                     <div>
                                                         <Label className="text-xs text-muted-foreground">Pump DE Velocity</Label>
-                                                        <p className="text-sm font-medium">
+                                                        <p className="text-sm font-medium text-foreground">
                                                             {formValues.vibrationData?.pump?.de?.velH || 'N/A'} mm/s (H)
                                                         </p>
                                                         <p className="text-xs text-muted-foreground">
@@ -4562,7 +4562,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                     </div>
                                                     <div>
                                                         <Label className="text-xs text-muted-foreground">Motor DE Velocity</Label>
-                                                        <p className="text-sm font-medium">
+                                                        <p className="text-sm font-medium text-foreground">
                                                             {formValues.vibrationData?.motor?.de?.velH || 'N/A'} mm/s (H)
                                                         </p>
                                                         <p className="text-xs text-muted-foreground">
@@ -4575,34 +4575,34 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                     </div>
 
                                     {/* 🚀 ENHANCED AI ASSESSMENT CENTER - Professional UI/UX with Intelligent Features - Full Width */}
-                                    <Card className="relative overflow-hidden border-0 shadow-2xl bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 w-full">
+                                    <Card className="relative overflow-hidden border border-border dark:border-border shadow-2xl bg-gradient-to-br from-background/90 via-muted/50 to-background/90 w-full">
                                         {/* Animated Background Pattern */}
-                                        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 via-purple-600/5 to-indigo-600/5"></div>
+                                        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5"></div>
                                         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-500"></div>
 
-                                        <CardHeader className="relative bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 text-white">
+                                        <CardHeader className="relative bg-gradient-to-br from-background to-muted/80 dark:from-background dark:to-muted/60 border-b border-border">
                                             {/* Floating Particles Effect */}
                                             <div className="absolute inset-0 overflow-hidden">
-                                                <div className="absolute top-4 left-4 w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-                                                <div className="absolute top-8 right-8 w-1 h-1 bg-purple-400 rounded-full animate-ping"></div>
-                                                <div className="absolute bottom-6 left-1/3 w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce"></div>
+                                                <div className="absolute top-4 left-4 w-2 h-2 bg-primary/60 rounded-full animate-pulse"></div>
+                                                <div className="absolute top-8 right-8 w-1 h-1 bg-primary/40 rounded-full animate-ping"></div>
+                                                <div className="absolute bottom-6 left-1/3 w-1.5 h-1.5 bg-primary/50 rounded-full animate-bounce"></div>
                                             </div>
 
                                             <CardTitle className="relative flex items-center gap-4">
                                                 <div className="relative">
-                                                    <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-purple-500 rounded-xl blur-lg opacity-75 animate-pulse"></div>
-                                                    <div className="relative p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg">
-                                                        <Brain className="h-8 w-8 text-white" />
+                                                    <div className="absolute inset-0 bg-primary/20 rounded-xl blur-lg opacity-75 animate-pulse"></div>
+                                                    <div className="relative p-3 bg-primary rounded-xl shadow-lg">
+                                                        <Brain className="h-8 w-8 text-primary-foreground" />
                                                     </div>
                                                 </div>
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-3">
-                                                        <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-transparent">
+                                                        <h2 className="text-2xl font-bold text-foreground">
                                                             AI Assessment Center
                                                         </h2>
-                                                        <Sparkles className="h-5 w-5 text-yellow-400 animate-pulse" />
+                                                        <Sparkles className="h-5 w-5 text-amber-500 animate-pulse" />
                                                     </div>
-                                                    <p className="text-sm text-blue-200 mt-1 font-medium">
+                                                    <p className="text-sm text-muted-foreground mt-1 font-medium">
                                                         Intelligent Maintenance Planning • Advanced Analytics • Real-time Assessment
                                                     </p>
                                                 </div>
@@ -4610,13 +4610,13 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                 {/* Status Indicators */}
                                                 <div className="flex items-center gap-3">
                                                     {isAssessing && (
-                                                        <div className="flex items-center gap-2 px-3 py-1 bg-blue-500/20 rounded-full border border-blue-400/30">
-                                                            <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-                                                            <span className="text-sm font-medium">Analyzing...</span>
+                                                        <div className="flex items-center gap-2 px-3 py-1 bg-primary/20 rounded-full border border-primary/30">
+                                                            <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+                                                            <span className="text-sm font-medium text-foreground">Analyzing...</span>
                                                         </div>
                                                     )}
                                                     {lastAssessmentTime && !isAssessing && (
-                                                        <Badge className="bg-green-500/20 text-green-200 border-green-400/30 hover:bg-green-500/30">
+                                                        <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-400/30 hover:bg-emerald-500/30">
                                                             <CheckCircle2 className="h-3 w-3 mr-1" />
                                                             Updated: {format(lastAssessmentTime, 'HH:mm:ss')}
                                                         </Badge>
@@ -4625,7 +4625,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                             </CardTitle>
 
                                             {/* Enhanced Control Panel */}
-                                            <div className="flex items-center justify-between mt-6 p-4 bg-white/10 rounded-xl backdrop-blur-sm border border-white/20">
+                                            <div className="flex items-center justify-between mt-6 p-4 bg-muted/20 rounded-xl backdrop-blur-sm border border-border">
                                                 <div className="flex items-center gap-3">
                                                     <Button
                                                         type="button"
@@ -4633,7 +4633,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                         size="sm"
                                                         onClick={performAIAssessment}
                                                         disabled={isAssessing || selectedEquipment.length === 0}
-                                                        className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0 shadow-lg transition-all duration-300 transform hover:scale-105"
+                                                        className="bg-primary hover:bg-primary/90 text-primary-foreground border-0 shadow-lg transition-all duration-300 transform hover:scale-105"
                                                     >
                                                         <RefreshCw className={`h-4 w-4 mr-2 ${isAssessing ? 'animate-spin' : ''}`} />
                                                         {isAssessing ? 'Analyzing...' : 'Run AI Assessment'}
@@ -4644,7 +4644,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                         variant="outline"
                                                         size="sm"
                                                         onClick={() => setShowChartsPanel(!showChartsPanel)}
-                                                        className="bg-white/10 hover:bg-white/20 text-white border-white/30 transition-all duration-300"
+                                                        className="bg-muted/20 hover:bg-muted/30 text-foreground border-border transition-all duration-300"
                                                     >
                                                         <BarChart className="h-4 w-4 mr-2" />
                                                         Advanced Charts
@@ -4655,7 +4655,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                         variant="outline"
                                                         size="sm"
                                                         onClick={() => setShowMaintenancePlanner(!showMaintenancePlanner)}
-                                                        className="bg-white/10 hover:bg-white/20 text-white border-white/30 transition-all duration-300"
+                                                        className="bg-muted/20 hover:bg-muted/30 text-foreground border-border transition-all duration-300"
                                                     >
                                                         <Wrench className="h-4 w-4 mr-2" />
                                                         Maintenance Planner
@@ -4770,7 +4770,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                         {/* Hero Metrics Section */}
                                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                                             {/* Health Score Card */}
-                                                            <div className="group relative overflow-hidden bg-gradient-to-br from-emerald-500 via-green-500 to-teal-600 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105">
+                                                            <div className="group relative overflow-hidden bg-gradient-to-br from-emerald-500/90 via-green-500/90 to-teal-600/90 dark:from-emerald-600 dark:via-green-600 dark:to-teal-700 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 border border-emerald-400/20">
                                                                 <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
                                                                 <div className="absolute bottom-0 left-0 w-16 h-16 bg-white/5 rounded-full -ml-8 -mb-8"></div>
                                                                 <div className="relative">
@@ -4799,11 +4799,11 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                             </div>
 
                                                             {/* Condition Card */}
-                                                            <div className="group relative overflow-hidden bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105">
+                                                            <div className="group relative overflow-hidden bg-gradient-to-br from-primary/90 via-primary to-primary/80 dark:from-primary dark:via-primary/90 dark:to-primary/70 rounded-2xl p-6 text-primary-foreground shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 border border-primary/20">
                                                                 <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
                                                                 <div className="relative">
                                                                     <div className="flex items-center justify-between mb-4">
-                                                                        <Shield className="h-8 w-8 text-white/80" />
+                                                                        <Shield className="h-8 w-8 text-primary-foreground/80" />
                                                                         <div className="text-right">
                                                                             <Badge
                                                                                 className={`text-sm px-3 py-1 ${aiAssessment.overallCondition === 'excellent' ? 'bg-green-500 text-white' :
@@ -4821,7 +4821,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                             </div>
 
                                                             {/* Risk Level Card */}
-                                                            <div className="group relative overflow-hidden bg-gradient-to-br from-orange-500 via-red-500 to-pink-600 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105">
+                                                            <div className="group relative overflow-hidden bg-gradient-to-br from-destructive/90 via-orange-500/90 to-red-500/90 dark:from-destructive dark:via-orange-600 dark:to-red-600 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 border border-destructive/20">
                                                                 <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
                                                                 <div className="relative">
                                                                     <div className="flex items-center justify-between mb-4">
@@ -4842,7 +4842,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                             </div>
 
                                                             {/* Priority Card */}
-                                                            <div className="group relative overflow-hidden bg-gradient-to-br from-purple-500 via-violet-500 to-indigo-600 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105">
+                                                            <div className="group relative overflow-hidden bg-gradient-to-br from-violet-500/90 via-purple-500/90 to-indigo-600/90 dark:from-violet-600 dark:via-purple-600 dark:to-indigo-700 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 border border-violet-400/20">
                                                                 <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
                                                                 <div className="relative">
                                                                     <div className="flex items-center justify-between mb-4">

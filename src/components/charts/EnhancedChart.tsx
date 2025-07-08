@@ -61,6 +61,7 @@ interface EnhancedChartProps {
     customOptions?: Partial<ChartOptions>;
     onDataPointClick?: (dataPoint: any) => void;
     onChartUpdate?: (chart: ChartJS) => void;
+    loading?: boolean;
 }
 
 export function EnhancedChart({
@@ -81,6 +82,7 @@ export function EnhancedChart({
     customOptions = {},
     onDataPointClick,
     onChartUpdate,
+    loading = false,
 }: EnhancedChartProps) {
     const { theme } = useTheme();
     const { getThemeClasses } = useThemeColors();
@@ -259,10 +261,10 @@ export function EnhancedChart({
                                     variant="ghost"
                                     size="sm"
                                     onClick={refreshChart}
-                                    disabled={isLoading}
+                                    disabled={(isLoading || loading)}
                                     className="h-8 w-8 p-0"
                                 >
-                                    <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
+                                    <RefreshCw className={cn("h-4 w-4", (isLoading || loading) && "animate-spin")} />
                                 </Button>
                             )}
                         </div>
@@ -330,7 +332,7 @@ export function EnhancedChart({
                     className="relative"
                     style={{ height: `${height}px` }}
                 >
-                    {isLoading && (
+                    {(isLoading || loading) && (
                         <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-10">
                             <div className="flex items-center gap-2">
                                 <RefreshCw className="h-5 w-5 animate-spin" />

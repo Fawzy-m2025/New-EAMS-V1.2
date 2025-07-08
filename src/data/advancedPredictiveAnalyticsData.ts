@@ -1,8 +1,9 @@
 // Mock data for Advanced Predictive Analytics
 
-import { masterEquipmentData } from './masterEquipmentData';
+// import { masterEquipmentData } from './masterEquipmentData';
 
-function mapRiskLevel(risk: string): 'critical' | 'high' | 'medium' | 'low' | 'excellent' {
+function mapRiskLevel(risk: string | undefined | null): 'critical' | 'high' | 'medium' | 'low' | 'excellent' {
+    if (typeof risk !== 'string') return 'medium';
     switch (risk.toLowerCase()) {
         case 'critical': return 'critical';
         case 'high': return 'high';
@@ -13,7 +14,8 @@ function mapRiskLevel(risk: string): 'critical' | 'high' | 'medium' | 'low' | 'e
     }
 }
 
-function mapPriority(risk: string): 'critical' | 'high' | 'medium' | 'low' {
+function mapPriority(risk: string | undefined | null): 'critical' | 'high' | 'medium' | 'low' {
+    if (typeof risk !== 'string') return 'medium';
     switch (risk.toLowerCase()) {
         case 'critical': return 'critical';
         case 'high': return 'high';
@@ -24,41 +26,99 @@ function mapPriority(risk: string): 'critical' | 'high' | 'medium' | 'low' {
     }
 }
 
-export const equipmentHealthScores = masterEquipmentData.map(eq => ({
-    assetId: eq.id,
-    assetName: eq.name,
-    score: eq.healthScore,
-    riskLevel: mapRiskLevel(eq.riskLevel),
-    trend: eq.trend,
-    lastUpdated: '2024-06-25'
-}));
+// Helper: group vibration history by equipmentId
+function groupByEquipment(vibrationHistory) {
+    const map = new Map();
+    for (const record of vibrationHistory) {
+        if (!map.has(record.equipmentId)) map.set(record.equipmentId, []);
+        map.get(record.equipmentId).push(record);
+    }
+    return map;
+}
 
-export const equipmentPredictiveAlerts = masterEquipmentData.flatMap(eq =>
-    eq.alerts.map(alert => ({
-        ...alert,
-        equipmentId: eq.id,
-        severity: mapPriority(alert.severity)
-    }))
-);
+export function getEquipmentHealthScores(vibrationHistory) {
+    if (!vibrationHistory || !Array.isArray(vibrationHistory) || vibrationHistory.length === 0) {
+        return [];
+    }
+    const grouped = groupByEquipment(vibrationHistory);
+    return Array.from(grouped.entries()).map(([equipmentId, records]) => {
+        // Use the most recent record for health score
+        const latest = records[records.length - 1];
+        return {
+            assetId: equipmentId,
+            assetName: latest.pumpNo || latest.motorBrand || 'Unknown',
+            score: 80 + Math.round(Math.random() * 20 - 10), // Placeholder: random health
+            riskLevel: mapRiskLevel(latest.riskLevel),
+            trend: 'stable',
+            lastUpdated: latest.date,
+            componentScores: {
+                vibration: latest.positions?.vibrationRMS ?? 80,
+                temperature: 85,
+                pressure: 90,
+                oil: 75,
+                alignment: 95
+            },
+            predictedFailureDate: new Date(Date.now() + Math.random() * 90 * 24 * 60 * 60 * 1000).toISOString(),
+            confidence: 90
+        };
+    });
+}
 
-export const equipmentWeibullData = masterEquipmentData.map(eq => ({
-    equipmentId: eq.id,
-    shapeParameter: 3.0,
-    scaleParameter: eq.rul,
-    lastUpdated: '2024-06-25'
-}));
+export function getEquipmentPredictiveAlerts(vibrationHistory) {
+    if (!vibrationHistory || !Array.isArray(vibrationHistory) || vibrationHistory.length === 0) {
+        return [];
+    }
+    // Example: alert if vibrationRMS > threshold
+    return vibrationHistory.flatMap(record => {
+        const alerts = [];
+        if (record.positions?.vibrationRMS > 10) {
+            alerts.push({
+                equipmentId: record.equipmentId,
+                severity: 'critical',
+                message: 'High vibration detected',
+                date: record.date
+            });
+        }
+        return alerts;
+    });
+}
 
-export const equipmentMaintenanceOptimization = masterEquipmentData.map(eq => ({
-    equipmentId: eq.id,
-    costSavings: 100000,
-    uptimeImprovement: 5,
-    maintenanceEfficiency: 90,
-    roi: 200
-}));
+export function getEquipmentWeibullData(vibrationHistory) {
+    if (!vibrationHistory || !Array.isArray(vibrationHistory) || vibrationHistory.length === 0) {
+        return [];
+    }
+    const grouped = groupByEquipment(vibrationHistory);
+    return Array.from(grouped.entries()).map(([equipmentId, records]) => ({
+        equipmentId,
+        shapeParameter: 2.8,
+        scaleParameter: 8000,
+        lastUpdated: records[records.length - 1].date
+    }));
+}
 
-export const equipmentPrescriptiveActions = masterEquipmentData.map(eq => ({
-    equipmentId: eq.id,
-    action: 'Inspect and maintain',
-    priority: mapPriority(eq.riskLevel),
-    dueDate: eq.maintenanceSchedule
-})); 
+export function getEquipmentMaintenanceOptimization(vibrationHistory) {
+    if (!vibrationHistory || !Array.isArray(vibrationHistory) || vibrationHistory.length === 0) {
+        return [];
+    }
+    const grouped = groupByEquipment(vibrationHistory);
+    return Array.from(grouped.entries()).map(([equipmentId, records]) => ({
+        equipmentId,
+        costSavings: 100000,
+        uptimeImprovement: 5,
+        maintenanceEfficiency: 90,
+        roi: 200
+    }));
+}
+
+export function getEquipmentPrescriptiveActions(vibrationHistory) {
+    if (!vibrationHistory || !Array.isArray(vibrationHistory) || vibrationHistory.length === 0) {
+        return [];
+    }
+    const grouped = groupByEquipment(vibrationHistory);
+    return Array.from(grouped.entries()).map(([equipmentId, records]) => ({
+        equipmentId,
+        action: 'Inspect and maintain',
+        priority: 'high',
+        dueDate: records[records.length - 1].date
+    }));
+} 

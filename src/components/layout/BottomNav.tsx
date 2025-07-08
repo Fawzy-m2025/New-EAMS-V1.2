@@ -66,9 +66,8 @@ export function BottomNav() {
                                         "sidebar-link text-sm py-2 relative rounded-lg transition-all duration-200 focus-visible:ring-2 focus-visible:ring-primary/60 focus:outline-none overflow-hidden",
                                         isActive ? "bg-primary/10 border-l-4 border-primary text-primary scale-105" : "hover:bg-accent/20 hover:scale-[1.03] text-sidebar-foreground/80"
                                     )}
-                                    aria-current={({ isActive }) => isActive ? "page" : undefined}
-                                    tabIndex={0}
                                     aria-label={child.title}
+                                    tabIndex={0}
                                 >
                                     {({ isActive }) => (
                                         <>
@@ -101,7 +100,6 @@ export function BottomNav() {
                     "sidebar-link flex items-center gap-3 rounded-lg transition-all duration-200 focus-visible:ring-2 focus-visible:ring-primary/60 focus:outline-none overflow-hidden relative",
                     isActive ? "bg-primary/10 border-l-4 border-primary text-primary scale-105" : "hover:bg-accent/20 hover:scale-[1.03] text-sidebar-foreground/80"
                 )}
-                aria-current={({ isActive }) => isActive ? "page" : undefined}
                 aria-label={item.title}
                 tabIndex={0}
             >

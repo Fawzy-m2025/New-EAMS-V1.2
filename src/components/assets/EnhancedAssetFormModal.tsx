@@ -7,31 +7,51 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Equipment, EquipmentType, EquipmentCategory } from "@/types/eams";
-import { Save, X } from "lucide-react";
+import { Equipment, EquipmentType, EquipmentCategory, Zone } from "@/types/eams";
+import { HierarchySelector } from "./HierarchySelector";
+import { HierarchyBreadcrumb } from "./HierarchyBreadcrumb";
+import { Save, X, MapPin, Building, Layers, Factory } from "lucide-react";
 
 interface EnhancedAssetFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   equipment: Equipment | null;
   onSave: (equipment: Equipment) => void;
+  zones?: Zone[]; // Hierarchical data for location selection
+  parentNodeId?: string; // Pre-selected parent node
 }
 
 export function EnhancedAssetFormModal({
   open,
   onOpenChange,
   equipment,
-  onSave
+  onSave,
+  zones = [],
+  parentNodeId
 }: EnhancedAssetFormModalProps) {
   const [formData, setFormData] = useState<Partial<Equipment>>({});
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [hierarchySelection, setHierarchySelection] = useState<any>(null);
 
   const isEditMode = !!equipment;
 
   useEffect(() => {
+    console.log('📝 EnhancedAssetFormModal opened:', { open, equipment, zones: zones.length });
+
     if (equipment) {
       setFormData(equipment);
+      // Set hierarchy selection from existing equipment
+      if (equipment.zoneId || equipment.stationId) {
+        setHierarchySelection({
+          zoneId: equipment.zoneId,
+          stationId: equipment.stationId,
+          lineId: equipment.lineId,
+          systemId: equipment.systemId,
+          level: equipment.lineId ? 'line' : 'system',
+          path: equipment.path || ''
+        });
+      }
     } else {
       setFormData({
         type: 'mechanical',
@@ -50,7 +70,10 @@ export function EnhancedAssetFormModal({
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       });
+      setHierarchySelection(null);
     }
+    setCurrentStep(1);
+    setErrors({});
   }, [equipment, open]);
 
   const validateStep1 = () => {
@@ -73,12 +96,22 @@ export function EnhancedAssetFormModal({
 
   const validateStep3 = () => {
     const newErrors: Record<string, string> = {};
-    if (!formData.location?.pumpStation) newErrors['location.pumpStation'] = 'Pump Station is required';
+    if (!hierarchySelection) {
+      newErrors.hierarchy = 'Location selection is required';
+    } else {
+      if (!hierarchySelection.zoneId) newErrors.hierarchy = 'Zone selection is required';
+      if (!hierarchySelection.stationId) newErrors.hierarchy = 'Station selection is required';
+      if (!hierarchySelection.lineId && !hierarchySelection.systemId) {
+        newErrors.hierarchy = 'Line or System selection is required';
+      }
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleNext = () => {
+    console.log('📝 handleNext clicked, currentStep:', currentStep);
+
     let isValid = false;
     switch (currentStep) {
       case 1:
@@ -94,9 +127,31 @@ export function EnhancedAssetFormModal({
         isValid = true;
     }
 
+    console.log('📝 Step validation result:', isValid);
+
     if (isValid) {
-      setCurrentStep(prev => prev + 1);
+      setCurrentStep(prev => {
+        const newStep = prev + 1;
+        console.log('📝 Moving to step:', newStep);
+        return newStep;
+      });
     }
+  };
+
+  const generateAssetCode = () => {
+    if (!hierarchySelection || !formData.category) return '';
+
+    const categoryCode = formData.category.charAt(0).toUpperCase();
+    const timestamp = Date.now().toString().slice(-6);
+
+    // Extract codes from hierarchy
+    const zoneCode = hierarchySelection.path.split('/')[0]?.replace('Zone ', '') || 'Z';
+    const stationCode = hierarchySelection.path.split('/')[1]?.replace('Pump Station ', '') || 'S';
+    const lineOrSystemCode = hierarchySelection.lineId ?
+      hierarchySelection.path.split('/')[2]?.replace('Line ', 'L') :
+      hierarchySelection.path.split('/')[2]?.replace(' System', 'S');
+
+    return `${categoryCode}-${zoneCode}-${stationCode}-${lineOrSystemCode}-${timestamp}`;
   };
 
   const handleSave = () => {
@@ -105,11 +160,48 @@ export function EnhancedAssetFormModal({
     if (currentStep === 2) isValid = validateStep2();
     if (currentStep === 3) isValid = validateStep3();
 
-    if (isValid) {
-      if (formData.conditionMonitoring) {
-        formData.conditionMonitoring.lastUpdated = new Date().toISOString();
-      }
-      onSave(formData as Equipment);
+    if (isValid && hierarchySelection) {
+      const equipmentData: Equipment = {
+        ...formData,
+        id: isEditMode ? formData.id! : `EQ-${Date.now()}`,
+        name: formData.name!,
+        level: 'equipment',
+        parentId: hierarchySelection.lineId || hierarchySelection.systemId,
+        zoneId: hierarchySelection.zoneId,
+        stationId: hierarchySelection.stationId,
+        lineId: hierarchySelection.lineId,
+        systemId: hierarchySelection.systemId,
+        path: `${hierarchySelection.path}/${formData.name}`,
+        breadcrumbs: [
+          ...hierarchySelection.path.split('/').map((part: string, index: number) => ({
+            id: `breadcrumb-${index}`,
+            name: part,
+            level: index === 0 ? 'zone' : index === 1 ? 'station' : index === 2 ? 'line' : 'equipment',
+            path: hierarchySelection.path.split('/').slice(0, index + 1).join('/')
+          })),
+          {
+            id: `breadcrumb-equipment`,
+            name: formData.name!,
+            level: 'equipment',
+            path: `${hierarchySelection.path}/${formData.name}`
+          }
+        ],
+        assetTag: formData.assetTag || generateAssetCode(),
+        location: {
+          ...formData.location,
+          zone: hierarchySelection.path.split('/')[0],
+          station: hierarchySelection.path.split('/')[1],
+          line: hierarchySelection.lineId ? hierarchySelection.path.split('/')[2] : undefined,
+          system: hierarchySelection.systemId ? hierarchySelection.path.split('/')[2] : undefined
+        },
+        conditionMonitoring: {
+          ...formData.conditionMonitoring,
+          lastUpdated: new Date().toISOString()
+        },
+        updatedAt: new Date().toISOString()
+      } as Equipment;
+
+      onSave(equipmentData);
       onOpenChange(false);
     }
   };
@@ -124,7 +216,7 @@ export function EnhancedAssetFormModal({
       } else {
         // For nested fields, we need to update the nested object
         const [topLevelKey, ...nestedKeys] = nameParts;
-        
+
         // Helper function to safely update nested objects
         const updateNestedField = (obj: any, keys: string[], val: any): any => {
           if (keys.length === 1) {
@@ -137,7 +229,7 @@ export function EnhancedAssetFormModal({
             };
           }
         };
-  
+
         return updateNestedField(prev, nameParts, value);
       }
     });
@@ -160,7 +252,13 @@ export function EnhancedAssetFormModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(newOpen) => {
+        console.log('📝 Dialog onOpenChange:', newOpen);
+        onOpenChange(newOpen);
+      }}
+    >
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
@@ -168,7 +266,13 @@ export function EnhancedAssetFormModal({
           </DialogTitle>
         </DialogHeader>
 
-        <form className="space-y-4">
+        <form
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            console.log('Form submit prevented');
+          }}
+        >
           {currentStep === 1 && (
             <Card>
               <CardHeader>
@@ -214,8 +318,13 @@ export function EnhancedAssetFormModal({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="pump">Pump</SelectItem>
-                      <SelectItem value="valve">Valve</SelectItem>
                       <SelectItem value="motor">Motor</SelectItem>
+                      <SelectItem value="valve">Valve</SelectItem>
+                      <SelectItem value="strainer">Strainer</SelectItem>
+                      <SelectItem value="sensor">Sensor</SelectItem>
+                      <SelectItem value="actuator">Actuator</SelectItem>
+                      <SelectItem value="tank">Tank</SelectItem>
+                      <SelectItem value="compressor">Compressor</SelectItem>
                       <SelectItem value="transformer">Transformer</SelectItem>
                     </SelectContent>
                   </Select>
@@ -279,74 +388,103 @@ export function EnhancedAssetFormModal({
           )}
 
           {currentStep === 3 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Location Details</CardTitle>
-              </CardHeader>
-              <CardContent className="grid gap-4">
-                <div>
-                  <Label htmlFor="pumpStation">Pump Station</Label>
-                  <Input
-                    type="text"
-                    id="location.pumpStation"
-                    name="pumpStation"
-                    value={(formData.location?.pumpStation || '') as string}
-                    onChange={(e) => {
-                      setFormData(prev => ({
-                        ...prev,
-                        location: { ...prev.location, pumpStation: e.target.value }
-                      }));
-                    }}
-                  />
-                  {errors['location.pumpStation'] && <p className="text-red-500 text-sm">{errors['location.pumpStation']}</p>}
-                </div>
-                <div>
-                  <Label htmlFor="building">Building</Label>
-                  <Input
-                    type="text"
-                    id="building"
-                    name="building"
-                    value={(formData.location?.building || '') as string}
-                    onChange={(e) => {
-                      setFormData(prev => ({
-                        ...prev,
-                        location: { ...prev.location, building: e.target.value }
-                      }));
-                    }}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="floor">Floor</Label>
-                  <Input
-                    type="text"
-                    id="floor"
-                    name="floor"
-                    value={(formData.location?.floor || '') as string}
-                    onChange={(e) => {
-                      setFormData(prev => ({
-                        ...prev,
-                        location: { ...prev.location, floor: e.target.value }
-                      }));
-                    }}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="room">Room</Label>
-                  <Input
-                    type="text"
-                    id="room"
-                    name="room"
-                    value={(formData.location?.room || '') as string}
-                    onChange={(e) => {
-                      setFormData(prev => ({
-                        ...prev,
-                        location: { ...prev.location, room: e.target.value }
-                      }));
-                    }}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+            <div className="space-y-4">
+              {/* Hierarchy Selection */}
+              <HierarchySelector
+                zones={zones}
+                selectedHierarchy={hierarchySelection}
+                onSelectionChange={setHierarchySelection}
+                allowedLevels={['line', 'system']}
+              />
+
+              {errors.hierarchy && (
+                <p className="text-red-500 text-sm">{errors.hierarchy}</p>
+              )}
+
+              {/* Additional Location Details */}
+              {hierarchySelection && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Building className="h-5 w-5" />
+                      Additional Location Details
+                    </CardTitle>
+                    {/* Show selected hierarchy path */}
+                    <div className="mt-2">
+                      <HierarchyBreadcrumb
+                        breadcrumbs={hierarchySelection.path.split('/').map((part: string, index: number) => ({
+                          id: `breadcrumb-${index}`,
+                          name: part,
+                          level: index === 0 ? 'zone' : index === 1 ? 'station' : index === 2 ? 'line' : 'equipment',
+                          path: hierarchySelection.path.split('/').slice(0, index + 1).join('/')
+                        }))}
+                        onNavigate={() => { }} // Read-only in form
+                      />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="grid gap-4">
+                    <div>
+                      <Label htmlFor="building">Building</Label>
+                      <Input
+                        type="text"
+                        id="building"
+                        name="building"
+                        value={(formData.location?.building || '') as string}
+                        onChange={(e) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            location: { ...prev.location, building: e.target.value }
+                          }));
+                        }}
+                        placeholder="e.g., Pump House, Control Room"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="floor">Floor</Label>
+                      <Input
+                        type="text"
+                        id="floor"
+                        name="floor"
+                        value={(formData.location?.floor || '') as string}
+                        onChange={(e) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            location: { ...prev.location, floor: e.target.value }
+                          }));
+                        }}
+                        placeholder="e.g., Ground Floor, First Floor"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="room">Room</Label>
+                      <Input
+                        type="text"
+                        id="room"
+                        name="room"
+                        value={(formData.location?.room || '') as string}
+                        onChange={(e) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            location: { ...prev.location, room: e.target.value }
+                          }));
+                        }}
+                        placeholder="e.g., Pump Room 1, Motor Room"
+                      />
+                    </div>
+
+                    {/* Auto-generated Asset Tag Preview */}
+                    <div>
+                      <Label>Auto-generated Asset Tag</Label>
+                      <div className="mt-1 p-2 bg-muted rounded-md">
+                        <Badge variant="outline" className="text-sm">
+                          {generateAssetCode() || 'Will be generated on save'}
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           )}
 
           {currentStep === 4 && (

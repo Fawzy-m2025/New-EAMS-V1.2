@@ -1,13 +1,15 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { 
-  TrendingUp, TrendingDown, AlertTriangle, Activity, Target, 
+import {
+  TrendingUp, TrendingDown, AlertTriangle, Activity, Target,
   Clock, CheckCircle, BarChart3, Brain, Zap
 } from 'lucide-react';
 import type { WorkOrder } from '@/types/eams';
+import { useAssetContext } from '@/contexts/AssetContext';
+import { vibrationHistory } from '@/data/vibrationHistory';
+import { unifiedAnalyticsFunctions } from '@/utils/enhancedMLPipelineData';
 
 interface AdvancedStatisticsProps {
   workOrders: WorkOrder[];
@@ -48,7 +50,7 @@ export function AdvancedStatistics({ workOrders }: AdvancedStatisticsProps) {
     const completionTimes = workOrders
       .filter(wo => wo.actualHours)
       .map(wo => wo.actualHours || 0);
-    
+
     return {
       shapeParameter: 2.3, // β > 1 indicates wear-out failures
       scaleParameter: 150.7, // η (characteristic life)
@@ -69,14 +71,14 @@ export function AdvancedStatistics({ workOrders }: AdvancedStatisticsProps) {
   const calculateBayesianForecast = (): BayesianForecast => {
     const avgCompletionTime = workOrders
       .filter(wo => wo.actualHours)
-      .reduce((acc, wo) => acc + (wo.actualHours || 0), 0) / 
+      .reduce((acc, wo) => acc + (wo.actualHours || 0), 0) /
       workOrders.filter(wo => wo.actualHours).length || 0;
 
     return {
       predictedCompletionTime: avgCompletionTime * 1.1, // 10% buffer
-      confidenceInterval: { 
-        lower: avgCompletionTime * 0.8, 
-        upper: avgCompletionTime * 1.3 
+      confidenceInterval: {
+        lower: avgCompletionTime * 0.8,
+        upper: avgCompletionTime * 1.3
       },
       resourceRequirement: { labor: 3.2, parts: 1.8 },
       updateFrequency: "Real-time (IoT-driven)"

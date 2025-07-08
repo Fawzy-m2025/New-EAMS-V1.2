@@ -7,45 +7,50 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { 
-  Activity, AlertTriangle, Calendar, Edit, FileText, 
-  Gauge, MapPin, Settings, Thermometer, TrendingUp, 
+import {
+  Activity, AlertTriangle, Calendar, Edit, FileText,
+  Gauge, MapPin, Settings, Thermometer, TrendingUp,
   Wrench, Zap, Package, Clock, DollarSign, User,
-  QrCode, Download, Share, Bell
+  QrCode, Download, Share, Bell, Building, Layers,
+  Factory, ChevronRight, Users, Link
 } from "lucide-react";
-import { Equipment } from "@/types/eams";
+import { Equipment, Zone } from "@/types/eams";
 import { EnhancedChart } from "@/components/charts/EnhancedChart";
+import { HierarchyBreadcrumb } from "./HierarchyBreadcrumb";
 
 interface EnhancedAssetDetailsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   equipment: Equipment | null;
   onEdit?: () => void;
+  zones?: Zone[]; // For finding related assets
+  onNavigateToAsset?: (assetId: string) => void;
+  onNavigateToHierarchy?: (nodeId: string, level: string) => void;
 }
 
-  // Function to generate trend data from equipment if historical data is available
-  // For now, using sample data as placeholder since historical data isn't stored
-  const getVibrationTrendData = (equipment: Equipment) => {
-    if (equipment.conditionMonitoring?.vibration) {
-      return [
-        { date: equipment.conditionMonitoring.vibration.measurementDate, rms: equipment.conditionMonitoring.vibration.rmsVelocity, peak: equipment.conditionMonitoring.vibration.peakVelocity, zone: equipment.conditionMonitoring.vibration.iso10816Zone },
-        // Placeholder for additional historical data points
-        { date: 'Previous', rms: equipment.conditionMonitoring.vibration.rmsVelocity * 0.9, peak: equipment.conditionMonitoring.vibration.peakVelocity * 0.9, zone: equipment.conditionMonitoring.vibration.iso10816Zone },
-      ];
-    }
-    return [];
-  };
+// Function to generate trend data from equipment if historical data is available
+// For now, using sample data as placeholder since historical data isn't stored
+const getVibrationTrendData = (equipment: Equipment) => {
+  if (equipment.conditionMonitoring?.vibration) {
+    return [
+      { date: equipment.conditionMonitoring.vibration.measurementDate, rms: equipment.conditionMonitoring.vibration.rmsVelocity, peak: equipment.conditionMonitoring.vibration.peakVelocity, zone: equipment.conditionMonitoring.vibration.iso10816Zone },
+      // Placeholder for additional historical data points
+      { date: 'Previous', rms: equipment.conditionMonitoring.vibration.rmsVelocity * 0.9, peak: equipment.conditionMonitoring.vibration.peakVelocity * 0.9, zone: equipment.conditionMonitoring.vibration.iso10816Zone },
+    ];
+  }
+  return [];
+};
 
-  const getTemperatureTrendData = (equipment: Equipment) => {
-    if (equipment.conditionMonitoring?.thermography) {
-      return [
-        { date: equipment.conditionMonitoring.thermography.measurementDate, temp: equipment.conditionMonitoring.thermography.maxTemperature, baseline: equipment.conditionMonitoring.thermography.baseline, delta: equipment.conditionMonitoring.thermography.deltaT },
-        // Placeholder for additional historical data points
-        { date: 'Previous', temp: equipment.conditionMonitoring.thermography.maxTemperature * 0.95, baseline: equipment.conditionMonitoring.thermography.baseline, delta: equipment.conditionMonitoring.thermography.deltaT * 0.9 },
-      ];
-    }
-    return [];
-  };
+const getTemperatureTrendData = (equipment: Equipment) => {
+  if (equipment.conditionMonitoring?.thermography) {
+    return [
+      { date: equipment.conditionMonitoring.thermography.measurementDate, temp: equipment.conditionMonitoring.thermography.maxTemperature, baseline: equipment.conditionMonitoring.thermography.baseline, delta: equipment.conditionMonitoring.thermography.deltaT },
+      // Placeholder for additional historical data points
+      { date: 'Previous', temp: equipment.conditionMonitoring.thermography.maxTemperature * 0.95, baseline: equipment.conditionMonitoring.thermography.baseline, delta: equipment.conditionMonitoring.thermography.deltaT * 0.9 },
+    ];
+  }
+  return [];
+};
 
 const maintenanceHistory = [
   {
@@ -80,10 +85,73 @@ const maintenanceHistory = [
   }
 ];
 
-export function EnhancedAssetDetailsModal({ open, onOpenChange, equipment, onEdit }: EnhancedAssetDetailsModalProps) {
+export function EnhancedAssetDetailsModal({
+  open,
+  onOpenChange,
+  equipment,
+  onEdit,
+  zones = [],
+  onNavigateToAsset,
+  onNavigateToHierarchy
+}: EnhancedAssetDetailsModalProps) {
   const [activeTab, setActiveTab] = useState('overview');
 
   if (!equipment) return null;
+
+  // Helper function to find related assets in the same hierarchy
+  const getRelatedAssets = () => {
+    if (!zones.length) return [];
+
+    const relatedAssets: Equipment[] = [];
+
+    zones.forEach(zone => {
+      zone.stations.forEach(station => {
+        // Find assets in the same line or system
+        if (equipment.lineId) {
+          const line = station.lines.find(l => l.id === equipment.lineId);
+          if (line) {
+            relatedAssets.push(...line.equipment.filter(eq => eq.id !== equipment.id));
+          }
+        }
+
+        if (equipment.systemId) {
+          const system = station.systems.find(s => s.id === equipment.systemId);
+          if (system) {
+            relatedAssets.push(...system.equipment.filter(eq => eq.id !== equipment.id));
+          }
+        }
+      });
+    });
+
+    return relatedAssets.slice(0, 5); // Limit to 5 related assets
+  };
+
+  // Helper function to get parent hierarchy info
+  const getParentHierarchy = () => {
+    if (!zones.length) return null;
+
+    for (const zone of zones) {
+      if (zone.id === equipment.zoneId) {
+        const station = zone.stations.find(s => s.id === equipment.stationId);
+        if (station) {
+          const line = station.lines.find(l => l.id === equipment.lineId);
+          const system = station.systems.find(s => s.id === equipment.systemId);
+
+          return {
+            zone,
+            station,
+            line,
+            system
+          };
+        }
+      }
+    }
+
+    return null;
+  };
+
+  const relatedAssets = getRelatedAssets();
+  const parentHierarchy = getParentHierarchy();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -118,8 +186,8 @@ export function EnhancedAssetDetailsModal({ open, onOpenChange, equipment, onEdi
     return <Activity className="h-5 w-5 text-green-600" />;
   };
 
-  const healthScore = equipment.conditionMonitoring?.overallCondition ? 
-    ({'excellent': 95, 'good': 80, 'fair': 65, 'poor': 40, 'critical': 20}[equipment.conditionMonitoring.overallCondition] || 50) : 50;
+  const healthScore = equipment.conditionMonitoring?.overallCondition ?
+    ({ 'excellent': 95, 'good': 80, 'fair': 65, 'poor': 40, 'critical': 20 }[equipment.conditionMonitoring.overallCondition] || 50) : 50;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -148,11 +216,26 @@ export function EnhancedAssetDetailsModal({ open, onOpenChange, equipment, onEdi
               </Button>
             </div>
           </div>
+
+          {/* Hierarchy Breadcrumbs */}
+          {equipment.breadcrumbs && equipment.breadcrumbs.length > 0 && (
+            <div className="mt-3 pt-3 border-t">
+              <HierarchyBreadcrumb
+                breadcrumbs={equipment.breadcrumbs}
+                onNavigate={(breadcrumb) => {
+                  if (onNavigateToHierarchy) {
+                    onNavigateToHierarchy(breadcrumb.id, breadcrumb.level);
+                  }
+                }}
+              />
+            </div>
+          )}
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 overflow-hidden">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="hierarchy">Hierarchy</TabsTrigger>
             <TabsTrigger value="monitoring">Monitoring</TabsTrigger>
             <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
             <TabsTrigger value="specifications">Specifications</TabsTrigger>
@@ -299,9 +382,8 @@ export function EnhancedAssetDetailsModal({ open, onOpenChange, equipment, onEdi
                       {equipment.conditionMonitoring.alerts.map((alert) => (
                         <div key={alert.id} className="flex items-center justify-between p-3 border rounded-lg">
                           <div className="flex items-center gap-3">
-                            <AlertTriangle className={`h-4 w-4 ${
-                              alert.severity === 'critical' ? 'text-red-500' : 'text-orange-500'
-                            }`} />
+                            <AlertTriangle className={`h-4 w-4 ${alert.severity === 'critical' ? 'text-red-500' : 'text-orange-500'
+                              }`} />
                             <div>
                               <div className="font-medium">{alert.message}</div>
                               <div className="text-sm text-muted-foreground">
@@ -318,6 +400,163 @@ export function EnhancedAssetDetailsModal({ open, onOpenChange, equipment, onEdi
                   </CardContent>
                 </Card>
               )}
+            </TabsContent>
+
+            {/* Hierarchy Tab */}
+            <TabsContent value="hierarchy" className="space-y-4">
+              {/* Parent Hierarchy */}
+              {parentHierarchy && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Building className="h-4 w-4" />
+                      Parent Hierarchy
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Zone */}
+                      <div
+                        className="p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => onNavigateToHierarchy?.(parentHierarchy.zone.id, 'zone')}
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <MapPin className="h-4 w-4 text-blue-500" />
+                          <span className="font-medium">Zone</span>
+                        </div>
+                        <p className="text-sm">{parentHierarchy.zone.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {parentHierarchy.zone.stations.length} stations
+                        </p>
+                      </div>
+
+                      {/* Station */}
+                      <div
+                        className="p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => onNavigateToHierarchy?.(parentHierarchy.station.id, 'station')}
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <Building className="h-4 w-4 text-green-500" />
+                          <span className="font-medium">Station</span>
+                        </div>
+                        <p className="text-sm">{parentHierarchy.station.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {parentHierarchy.station.lines.length + parentHierarchy.station.systems.length} items
+                        </p>
+                      </div>
+
+                      {/* Line or System */}
+                      {(parentHierarchy.line || parentHierarchy.system) && (
+                        <div
+                          className="p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+                          onClick={() => {
+                            const item = parentHierarchy.line || parentHierarchy.system;
+                            const level = parentHierarchy.line ? 'line' : 'system';
+                            onNavigateToHierarchy?.(item!.id, level);
+                          }}
+                        >
+                          <div className="flex items-center gap-2 mb-2">
+                            {parentHierarchy.line ? (
+                              <Layers className="h-4 w-4 text-purple-500" />
+                            ) : (
+                              <Factory className="h-4 w-4 text-orange-500" />
+                            )}
+                            <span className="font-medium">
+                              {parentHierarchy.line ? 'Line' : 'System'}
+                            </span>
+                          </div>
+                          <p className="text-sm">
+                            {parentHierarchy.line?.name || parentHierarchy.system?.name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {(parentHierarchy.line?.equipment.length || parentHierarchy.system?.equipment.length || 0)} equipment
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Related Assets */}
+              {relatedAssets.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Related Assets
+                      <Badge variant="secondary">{relatedAssets.length}</Badge>
+                    </CardTitle>
+                    <CardDescription>
+                      Other equipment in the same {equipment.lineId ? 'line' : 'system'}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {relatedAssets.map((asset) => (
+                        <div
+                          key={asset.id}
+                          className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+                          onClick={() => onNavigateToAsset?.(asset.id)}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-muted rounded-lg">
+                              {asset.type === 'mechanical' ? (
+                                <Settings className="h-4 w-4" />
+                              ) : asset.type === 'electrical' ? (
+                                <Zap className="h-4 w-4" />
+                              ) : (
+                                <Activity className="h-4 w-4" />
+                              )}
+                            </div>
+                            <div>
+                              <p className="font-medium">{asset.name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {asset.manufacturer} {asset.model}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge className={getStatusColor(asset.status)}>
+                              {asset.status}
+                            </Badge>
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Asset Path */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Link className="h-4 w-4" />
+                    Asset Path
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="text-sm font-mono">{equipment.path}</p>
+                  </div>
+                  <div className="mt-3 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Asset ID:</span>
+                      <span className="font-mono">{equipment.id}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Asset Tag:</span>
+                      <span className="font-mono">{equipment.assetTag}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Serial Number:</span>
+                      <span className="font-mono">{equipment.serialNumber}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {/* Condition Monitoring Tab */}

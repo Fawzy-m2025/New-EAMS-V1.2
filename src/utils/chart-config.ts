@@ -437,11 +437,31 @@ export const updateChartTheme = (chart: ChartJS, isDark: boolean) => {
     const textColor = isDark ? '#e5e7eb' : '#374151';
     const gridColor = isDark ? 'rgba(75, 85, 99, 0.2)' : 'rgba(229, 231, 235, 0.8)';
 
-    chart.options.plugins!.legend!.labels!.color = textColor;
-    chart.options.scales!.x!.grid!.color = gridColor;
-    chart.options.scales!.y!.grid!.color = gridColor;
-    chart.options.scales!.x!.ticks!.color = textColor;
-    chart.options.scales!.y!.ticks!.color = textColor;
+    // Safely update legend label color
+    if (chart.options.plugins && chart.options.plugins.legend && chart.options.plugins.legend.labels) {
+        chart.options.plugins.legend.labels.color = textColor;
+    }
+
+    // Safely update scales for Cartesian charts
+    if (chart.options.scales) {
+        if (chart.options.scales.x && chart.options.scales.x.grid) {
+            chart.options.scales.x.grid.color = gridColor;
+        }
+        if (chart.options.scales.y && chart.options.scales.y.grid) {
+            chart.options.scales.y.grid.color = gridColor;
+        }
+        if (chart.options.scales.x && chart.options.scales.x.ticks) {
+            chart.options.scales.x.ticks.color = textColor;
+        }
+        if (chart.options.scales.y && chart.options.scales.y.ticks) {
+            chart.options.scales.y.ticks.color = textColor;
+        }
+        // For radar charts
+        const rScale = chart.options.scales.r;
+        if (rScale && typeof rScale === 'object' && 'pointLabels' in rScale && rScale.pointLabels && typeof rScale.pointLabels === 'object') {
+            (rScale.pointLabels as { color?: string }).color = textColor;
+        }
+    }
 
     chart.update('none');
 };

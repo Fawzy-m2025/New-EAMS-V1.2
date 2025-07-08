@@ -56,60 +56,14 @@ import {
     Info,
     DollarSign
 } from 'lucide-react';
-import { rulPredictions, maintenanceSchedules, riskAssessments, pipelineStatuses } from '@/data/enhancedMLPipelineData';
-
-interface RULPrediction {
-    equipment: string;
-    condition: 'Critical' | 'Poor' | 'Fair' | 'Good' | 'Excellent';
-    vibration: string;
-    operatingHours: number;
-    predictedRUL: number;
-    riskLevel: 'High Risk' | 'Medium Risk' | 'Low Risk';
-    riskScore: number;
-    lastMaintenance: string;
-    nextMaintenance: string;
-    maintenanceType: 'Preventive' | 'Predictive' | 'Emergency' | 'Condition-Based';
-    priority: 'Critical' | 'High' | 'Medium' | 'Low';
-    costImpact: number;
-    downtimeImpact: number;
-}
-
-interface MaintenanceSchedule {
-    id: string;
-    equipment: string;
-    maintenanceType: 'Preventive' | 'Predictive' | 'Emergency' | 'Condition-Based';
-    scheduledDate: Date;
-    estimatedDuration: number; // hours
-    priority: 'Critical' | 'High' | 'Medium' | 'Low';
-    status: 'Scheduled' | 'In Progress' | 'Completed' | 'Overdue' | 'Cancelled';
-    assignedTechnician?: string;
-    estimatedCost: number;
-    riskScore: number;
-    description: string;
-    requiredParts: string[];
-}
-
-interface RiskAssessment {
-    equipment: string;
-    riskScore: number;
-    factors: {
-        vibration: number;
-        temperature: number;
-        operatingHours: number;
-        age: number;
-        criticality: number;
-        environment: number;
-    };
-    recommendations: string[];
-    mitigationActions: string[];
-}
-
-interface PipelineStatus {
-    name: string;
-    status: 'Active' | 'Training' | 'Failed' | 'Idle';
-    lastRun: string;
-    description: string;
-}
+import {
+    getRULPredictionsFromHistory,
+    getMaintenanceSchedulesFromHistory,
+    getRiskAssessmentsFromHistory,
+    getPipelineStatusesFromHistory
+} from '@/data/enhancedMLPipelineData';
+import { useAssetContext } from '@/contexts/AssetContext';
+import type { RULPrediction, MaintenanceSchedule, RiskAssessment, PipelineStatus } from '@/types/ml';
 
 const EnhancedMLPipelines: React.FC = () => {
     const { theme } = useTheme();
@@ -120,7 +74,7 @@ const EnhancedMLPipelines: React.FC = () => {
     const [isSchedulingMode, setIsSchedulingMode] = useState<boolean>(false);
 
     // New state for interactive features
-    const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
     const [selectedMaintenance, setSelectedMaintenance] = useState<MaintenanceSchedule | null>(null);
     const [showMaintenanceDialog, setShowMaintenanceDialog] = useState<boolean>(false);
     const [showRiskDialog, setShowRiskDialog] = useState<boolean>(false);
@@ -178,12 +132,21 @@ const EnhancedMLPipelines: React.FC = () => {
         return 'Low';
     };
 
+    // Live equipment data from context
+    const { vibrationHistory } = useAssetContext();
+
+    // Unified analytics data from vibration history
+    const rulPredictions = getRULPredictionsFromHistory(vibrationHistory);
+    const maintenanceSchedules = getMaintenanceSchedulesFromHistory(vibrationHistory);
+    const riskAssessments = getRiskAssessmentsFromHistory(vibrationHistory);
+    const pipelineStatuses = getPipelineStatusesFromHistory(vibrationHistory);
+
     // Filtered data based on risk threshold
     const filteredPredictions = useMemo(() => {
         return rulPredictions.filter(prediction =>
             prediction.riskScore >= riskThreshold || maintenanceFilter === 'all'
         );
-    }, [riskThreshold, maintenanceFilter]);
+    }, [rulPredictions, riskThreshold, maintenanceFilter]);
 
     // Maintenance schedule for selected date
     const scheduledMaintenance = useMemo(() => {
@@ -191,7 +154,7 @@ const EnhancedMLPipelines: React.FC = () => {
         return maintenanceSchedules.filter(schedule =>
             schedule.scheduledDate.toDateString() === selectedDate.toDateString()
         );
-    }, [selectedDate]);
+    }, [maintenanceSchedules, selectedDate]);
 
     const getConditionColor = (condition: string) => {
         switch (condition) {
@@ -857,6 +820,29 @@ const EnhancedMLPipelines: React.FC = () => {
             }
         }
     };
+
+    // Set loading to false as soon as analyticsEquipment is ready
+    useEffect(() => {
+        setIsLoading(false);
+    }, [rulPredictions, maintenanceSchedules, riskAssessments, pipelineStatuses]);
+
+    if (isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center h-96">
+                <span className="text-lg font-semibold mb-2">Loading Predictive Analytics</span>
+                <span className="text-muted-foreground">Initializing equipment data...</span>
+            </div>
+        );
+    }
+
+    if (!rulPredictions || rulPredictions.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center h-96">
+                <span className="text-lg font-semibold mb-2">No equipment data available</span>
+                <span className="text-muted-foreground">Please add vibration history records to see analytics.</span>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">

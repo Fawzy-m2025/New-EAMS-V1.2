@@ -44,12 +44,13 @@ import mlService from '@/services/mlService';
 import { enhancedAssetData } from '@/data/enhancedAssetData';
 import EnhancedMLPipelines from './EnhancedMLPipelines';
 import {
-    equipmentHealthScores as mockEquipmentHealthScores,
-    equipmentPredictiveAlerts as mockEquipmentPredictiveAlerts,
-    equipmentWeibullData as mockEquipmentWeibullData,
-    equipmentMaintenanceOptimization as mockEquipmentMaintenanceOptimization,
-    equipmentPrescriptiveActions as mockEquipmentPrescriptiveActions
+    getEquipmentHealthScores,
+    getEquipmentPredictiveAlerts,
+    getEquipmentWeibullData,
+    getEquipmentMaintenanceOptimization,
+    getEquipmentPrescriptiveActions
 } from '@/data/advancedPredictiveAnalyticsData';
+import { useAssetContext } from '@/contexts/AssetContext';
 
 const AdvancedPredictiveAnalytics: React.FC = () => {
     // State management
@@ -60,12 +61,13 @@ const AdvancedPredictiveAnalytics: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [equipmentChangeLoading, setEquipmentChangeLoading] = useState(false);
 
-    // Equipment-specific data
-    const [equipmentHealthScores, setEquipmentHealthScores] = useState(mockEquipmentHealthScores);
-    const [equipmentPredictiveAlerts, setEquipmentPredictiveAlerts] = useState(mockEquipmentPredictiveAlerts);
-    const [equipmentWeibullData, setEquipmentWeibullData] = useState(mockEquipmentWeibullData);
-    const [equipmentMaintenanceOptimization, setEquipmentMaintenanceOptimization] = useState(mockEquipmentMaintenanceOptimization);
-    const [equipmentPrescriptiveActions, setEquipmentPrescriptiveActions] = useState(mockEquipmentPrescriptiveActions);
+    // Live equipment data from context
+    const { equipment, monitoredEquipment, vibrationHistory } = useAssetContext();
+    const equipmentHealthScores = getEquipmentHealthScores(vibrationHistory);
+    const equipmentPredictiveAlerts = getEquipmentPredictiveAlerts(vibrationHistory);
+    const equipmentWeibullData = getEquipmentWeibullData(vibrationHistory);
+    const equipmentMaintenanceOptimization = getEquipmentMaintenanceOptimization(vibrationHistory);
+    const equipmentPrescriptiveActions = getEquipmentPrescriptiveActions(vibrationHistory);
 
     // Get available equipment for selection
     const availableEquipment = enhancedAssetData.map(asset => ({
@@ -73,136 +75,6 @@ const AdvancedPredictiveAnalytics: React.FC = () => {
         name: asset.name,
         category: asset.category
     }));
-
-    // Equipment-specific data fetching
-    const fetchEquipmentData = async () => {
-        try {
-            setLoading(true);
-
-            // Fetch equipment-specific data
-            const [
-                healthScores,
-                predictiveAlerts,
-                weibullData,
-                maintenanceOpt,
-                prescriptiveActions
-            ] = await Promise.all([
-                mlService.getEquipmentHealthScores(),
-                mlService.getEquipmentPredictiveAlerts(),
-                mlService.getEquipmentWeibullAnalysis(),
-                mlService.getEquipmentMaintenanceOptimization(),
-                mlService.getEquipmentPrescriptiveActions()
-            ]);
-
-            setEquipmentHealthScores(healthScores);
-            setEquipmentPredictiveAlerts(predictiveAlerts);
-            setEquipmentWeibullData(weibullData);
-            setEquipmentMaintenanceOptimization(maintenanceOpt);
-            setEquipmentPrescriptiveActions(prescriptiveActions);
-
-            setError(null);
-        } catch (err) {
-            console.error('Error fetching equipment data:', err);
-            setError('Failed to fetch equipment data');
-        } finally {
-            setLoading(false);
-            setEquipmentChangeLoading(false);
-        }
-    };
-
-    // Load equipment data on component mount
-    useEffect(() => {
-        fetchEquipmentData();
-    }, []);
-
-    // Set loading state when equipment selection changes
-    useEffect(() => {
-        if (selectedEquipment && selectedEquipment !== 'all') {
-            setEquipmentChangeLoading(true);
-            // Simulate a brief loading time for equipment change
-            const timer = setTimeout(() => {
-                setEquipmentChangeLoading(false);
-            }, 500);
-            return () => clearTimeout(timer);
-        }
-    }, [selectedEquipment]);
-
-    // Filter data by selected equipment
-    const filteredHealthScores = selectedEquipment === 'all'
-        ? equipmentHealthScores
-        : equipmentHealthScores.filter(score => score.assetId === selectedEquipment);
-
-    const filteredPredictiveAlerts = selectedEquipment === 'all'
-        ? equipmentPredictiveAlerts
-        : equipmentPredictiveAlerts.filter(alert => alert.equipmentId === selectedEquipment);
-
-    const filteredWeibullData = selectedEquipment === 'all'
-        ? equipmentWeibullData
-        : equipmentWeibullData.filter(weibull => weibull.equipmentId === selectedEquipment);
-
-    const filteredMaintenanceOptimization = selectedEquipment === 'all'
-        ? equipmentMaintenanceOptimization
-        : equipmentMaintenanceOptimization.filter(opt => opt.equipmentId === selectedEquipment);
-
-    const filteredPrescriptiveActions = selectedEquipment === 'all'
-        ? equipmentPrescriptiveActions
-        : equipmentPrescriptiveActions.filter(action => action.equipmentId === selectedEquipment);
-
-    // Get Weibull parameters for selected equipment
-    const getWeibullParamsForEquipment = () => {
-        if (selectedEquipment === 'all') {
-            // Return average parameters for all equipment
-            return {
-                shapeParameter: 3.0,
-                scaleParameter: 8000,
-                confidenceInterval: {
-                    lower: 2.7,
-                    upper: 3.3
-                },
-                goodnessOfFit: {
-                    rSquared: 0.95,
-                    kolmogorovSmirnov: 0.045,
-                    andersonDarling: 0.32
-                }
-            };
-        }
-
-        // Get specific equipment Weibull data
-        const equipmentWeibull = filteredWeibullData[0];
-        if (equipmentWeibull) {
-            return {
-                shapeParameter: equipmentWeibull.shapeParameter || 3.0,
-                scaleParameter: equipmentWeibull.scaleParameter || 8000,
-                confidenceInterval: {
-                    lower: 2.7,
-                    upper: 3.3
-                },
-                goodnessOfFit: {
-                    rSquared: 0.95,
-                    kolmogorovSmirnov: 0.045,
-                    andersonDarling: 0.32
-                }
-            };
-        }
-
-        // Fallback to default parameters
-        return {
-            shapeParameter: 3.0,
-            scaleParameter: 8000,
-            confidenceInterval: {
-                lower: 2.7,
-                upper: 3.3
-            },
-            goodnessOfFit: {
-                rSquared: 0.95,
-                kolmogorovSmirnov: 0.045,
-                andersonDarling: 0.32
-            }
-        };
-    };
-
-    // Get current Weibull parameters
-    const weibullParams = getWeibullParamsForEquipment();
 
     // Tab navigation configuration
     const tabConfig = [
@@ -388,6 +260,31 @@ const AdvancedPredictiveAnalytics: React.FC = () => {
         }
     };
 
+    useEffect(() => {
+        if (loading) {
+            const timer = setTimeout(() => setLoading(false), 500); // Simulate loading or wait for data
+            return () => clearTimeout(timer);
+        }
+    }, [loading, equipment, monitoredEquipment, vibrationHistory]);
+
+    // Default Weibull parameters
+    const defaultWeibullParams = {
+        shapeParameter: 2.5,
+        scaleParameter: 8000,
+        confidenceInterval: { lower: 2.0, upper: 3.0 },
+        goodnessOfFit: { rSquared: 0.95, kolmogorovSmirnov: 0.05, andersonDarling: 0.1 },
+        lastUpdated: new Date().toISOString(),
+    };
+    // Use the first available equipment Weibull data, or fallback to default
+    const weibullParams = equipmentWeibullData && equipmentWeibullData[0]
+        ? {
+            ...defaultWeibullParams,
+            ...equipmentWeibullData[0],
+            confidenceInterval: defaultWeibullParams.confidenceInterval,
+            goodnessOfFit: defaultWeibullParams.goodnessOfFit,
+        }
+        : defaultWeibullParams;
+
     if (error) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
@@ -493,7 +390,7 @@ const AdvancedPredictiveAnalytics: React.FC = () => {
                             </SelectContent>
                         </Select>
                         <Badge variant="outline">
-                            {filteredHealthScores.length} Equipment
+                            {equipmentHealthScores.length} Equipment
                         </Badge>
                         {equipmentChangeLoading && (
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -524,7 +421,7 @@ const AdvancedPredictiveAnalytics: React.FC = () => {
                                 <Database className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">{filteredHealthScores.length}</div>
+                                <div className="text-2xl font-bold">{equipmentHealthScores.length}</div>
                                 <p className="text-xs text-muted-foreground">
                                     Monitored assets
                                 </p>
@@ -537,7 +434,7 @@ const AdvancedPredictiveAnalytics: React.FC = () => {
                                 <AlertTriangle className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">{filteredPredictiveAlerts.length}</div>
+                                <div className="text-2xl font-bold">{equipmentPredictiveAlerts.length}</div>
                                 <p className="text-xs text-muted-foreground">
                                     Predictive alerts
                                 </p>
@@ -551,8 +448,8 @@ const AdvancedPredictiveAnalytics: React.FC = () => {
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold">
-                                    {filteredHealthScores.length > 0
-                                        ? Math.round(filteredHealthScores.reduce((sum, score) => sum + score.score, 0) / filteredHealthScores.length)
+                                    {equipmentHealthScores.length > 0
+                                        ? Math.round(equipmentHealthScores.reduce((sum, score) => sum + score.score, 0) / equipmentHealthScores.length)
                                         : 0}%
                                 </div>
                                 <p className="text-xs text-muted-foreground">
@@ -568,7 +465,7 @@ const AdvancedPredictiveAnalytics: React.FC = () => {
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold">
-                                    {filteredHealthScores.filter(score => score.riskLevel === 'critical' || score.riskLevel === 'high').length}
+                                    {equipmentHealthScores.filter(score => score.riskLevel === 'critical' || score.riskLevel === 'high').length}
                                 </div>
                                 <p className="text-xs text-muted-foreground">
                                     High priority assets
@@ -595,11 +492,11 @@ const AdvancedPredictiveAnalytics: React.FC = () => {
                                         datasets: [{
                                             label: 'Equipment Count',
                                             data: [
-                                                filteredHealthScores.filter(s => s.score >= 90).length,
-                                                filteredHealthScores.filter(s => s.score >= 80 && s.score < 90).length,
-                                                filteredHealthScores.filter(s => s.score >= 70 && s.score < 80).length,
-                                                filteredHealthScores.filter(s => s.score >= 60 && s.score < 70).length,
-                                                filteredHealthScores.filter(s => s.score < 60).length
+                                                equipmentHealthScores.filter(s => s.score >= 90).length,
+                                                equipmentHealthScores.filter(s => s.score >= 80 && s.score < 90).length,
+                                                equipmentHealthScores.filter(s => s.score >= 70 && s.score < 80).length,
+                                                equipmentHealthScores.filter(s => s.score >= 60 && s.score < 70).length,
+                                                equipmentHealthScores.filter(s => s.score < 60).length
                                             ],
                                             backgroundColor: [
                                                 '#10b981',
@@ -640,10 +537,10 @@ const AdvancedPredictiveAnalytics: React.FC = () => {
                                         labels: ['Critical', 'High', 'Medium', 'Low'],
                                         datasets: [{
                                             data: [
-                                                filteredPredictiveAlerts.filter(a => a.severity === 'critical').length,
-                                                filteredPredictiveAlerts.filter(a => a.severity === 'high').length,
-                                                filteredPredictiveAlerts.filter(a => a.severity === 'medium').length,
-                                                filteredPredictiveAlerts.filter(a => a.severity === 'low').length
+                                                equipmentPredictiveAlerts.filter(a => a.severity === 'critical').length,
+                                                equipmentPredictiveAlerts.filter(a => a.severity === 'high').length,
+                                                equipmentPredictiveAlerts.filter(a => a.severity === 'medium').length,
+                                                equipmentPredictiveAlerts.filter(a => a.severity === 'low').length
                                             ],
                                             backgroundColor: [
                                                 '#ef4444',
@@ -807,7 +704,7 @@ const AdvancedPredictiveAnalytics: React.FC = () => {
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
-                                {filteredHealthScores.slice(0, 5).map((score) => (
+                                {equipmentHealthScores.slice(0, 5).map((score) => (
                                     <div key={score.assetId} className="flex items-center justify-between p-4 border rounded-lg">
                                         <div className="flex items-center gap-4">
                                             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
@@ -847,9 +744,9 @@ const AdvancedPredictiveAnalytics: React.FC = () => {
                             </CardTitle>
                             <CardDescription>
                                 Reliability analysis using Weibull distribution parameters
-                                {selectedEquipment !== 'all' && filteredWeibullData[0] && (
+                                {selectedEquipment !== 'all' && equipmentWeibullData[0] && (
                                     <span className="block mt-1">
-                                        Last updated: {new Date(filteredWeibullData[0].lastUpdated).toLocaleString()}
+                                        Last updated: {new Date(equipmentWeibullData[0].lastUpdated).toLocaleString()}
                                     </span>
                                 )}
                             </CardDescription>
@@ -1251,7 +1148,7 @@ const AdvancedPredictiveAnalytics: React.FC = () => {
                                         </CardHeader>
                                         <CardContent>
                                             <div className="text-2xl font-bold text-red-600">
-                                                {filteredPredictiveAlerts.length}
+                                                {equipmentPredictiveAlerts.length}
                                             </div>
                                             <p className="text-xs text-muted-foreground">Current alerts</p>
                                         </CardContent>
@@ -1642,7 +1539,7 @@ const AdvancedPredictiveAnalytics: React.FC = () => {
                                     </CardHeader>
                                     <CardContent>
                                         <div className="space-y-4">
-                                            {filteredPredictiveAlerts.map((alert) => (
+                                            {equipmentPredictiveAlerts.map((alert) => (
                                                 <div key={alert.id} className="flex items-center justify-between p-4 border rounded-lg">
                                                     <div className="flex items-center gap-4">
                                                         <div className={`w-3 h-3 rounded-full ${getSeverityColor(alert.severity)}`} />
@@ -1693,8 +1590,8 @@ const AdvancedPredictiveAnalytics: React.FC = () => {
                                         </CardHeader>
                                         <CardContent>
                                             <div className="text-2xl font-bold text-green-600">
-                                                {filteredHealthScores.length > 0
-                                                    ? Math.round(filteredHealthScores.reduce((sum, score) => sum + score.score, 0) / filteredHealthScores.length)
+                                                {equipmentHealthScores.length > 0
+                                                    ? Math.round(equipmentHealthScores.reduce((sum, score) => sum + score.score, 0) / equipmentHealthScores.length)
                                                     : 0}%
                                             </div>
                                             <p className="text-xs text-muted-foreground">Overall fleet health</p>
@@ -1706,7 +1603,7 @@ const AdvancedPredictiveAnalytics: React.FC = () => {
                                         </CardHeader>
                                         <CardContent>
                                             <div className="text-2xl font-bold text-red-600">
-                                                {filteredHealthScores.filter(score => score.riskLevel === 'critical').length}
+                                                {equipmentHealthScores.filter(score => score.riskLevel === 'critical').length}
                                             </div>
                                             <p className="text-xs text-muted-foreground">Requires attention</p>
                                         </CardContent>
@@ -2070,7 +1967,7 @@ const AdvancedPredictiveAnalytics: React.FC = () => {
                                     </CardHeader>
                                     <CardContent>
                                         <div className="space-y-4">
-                                            {filteredHealthScores.map((score) => (
+                                            {equipmentHealthScores.map((score) => (
                                                 <div key={score.assetId} className="flex items-center justify-between p-4 border rounded-lg">
                                                     <div className="flex items-center gap-4">
                                                         <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
@@ -2980,7 +2877,7 @@ const AdvancedPredictiveAnalytics: React.FC = () => {
                                         </CardHeader>
                                         <CardContent>
                                             <div className="space-y-4">
-                                                {filteredPrescriptiveActions.map((action) => (
+                                                {equipmentPrescriptiveActions.map((action) => (
                                                     <div key={action.equipmentId + '-' + action.action} className="p-4 border rounded-lg">
                                                         <div className="flex items-center justify-between mb-2">
                                                             <h4 className="font-medium">{action.action}</h4>
@@ -3504,9 +3401,9 @@ const AdvancedPredictiveAnalytics: React.FC = () => {
                             </CardTitle>
                             <CardDescription>
                                 Root cause and failure mode analysis using RCFA and PFMEA methodologies
-                                {selectedEquipment !== 'all' && filteredWeibullData[0] && (
+                                {equipmentWeibullData[0] && (
                                     <span className="block mt-1">
-                                        Last updated: {new Date(filteredWeibullData[0].lastUpdated).toLocaleString()}
+                                        Last updated: {new Date(equipmentWeibullData[0].lastUpdated).toLocaleString()}
                                     </span>
                                 )}
                             </CardDescription>

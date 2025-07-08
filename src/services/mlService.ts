@@ -27,9 +27,13 @@ import type {
     LIMEExplanation,
     AdvancedPrescriptiveAnalytics,
     EnhancedNotificationWorkflow,
-    MLPipelineManagement
+    MLPipelineManagement,
+    RULPrediction,
+    MaintenanceSchedule,
+    RiskAssessment,
+    PipelineStatus
 } from '@/types/ml';
-import { enhancedAssetData } from '@/data/enhancedAssetData';
+import { allHierarchicalEquipment } from '@/data/hierarchicalAssetData';
 
 // Equipment-specific monitoring configurations
 const equipmentMonitoringConfig = {
@@ -2028,7 +2032,7 @@ class MLService {
             console.warn('Failed to fetch equipment health scores, using mock data:', error);
 
             // Generate health scores for actual equipment from asset registry
-            return enhancedAssetData.map(asset => {
+            return allHierarchicalEquipment.map(asset => {
                 const config = equipmentMonitoringConfig[asset.name as keyof typeof equipmentMonitoringConfig];
                 const baseScore = Math.random() * 30 + 70; // 70-100 range
                 const trend = Math.random() > 0.5 ? 'improving' : 'declining';
@@ -2076,7 +2080,7 @@ class MLService {
             // Generate alerts for actual equipment
             const alerts: PredictiveAlert[] = [];
 
-            enhancedAssetData.forEach(asset => {
+            allHierarchicalEquipment.forEach(asset => {
                 const config = equipmentMonitoringConfig[asset.name as keyof typeof equipmentMonitoringConfig];
                 if (!config) return;
 
@@ -2135,7 +2139,7 @@ class MLService {
             console.warn('Failed to fetch equipment Weibull analysis, using mock data:', error);
 
             // Generate Weibull analysis for actual equipment
-            return enhancedAssetData.map(asset => {
+            return allHierarchicalEquipment.map(asset => {
                 const config = equipmentMonitoringConfig[asset.name as keyof typeof equipmentMonitoringConfig];
                 const weibullParams = config?.weibullParams || { shape: 3.0, scale: 10000 };
 
@@ -2188,7 +2192,7 @@ class MLService {
             console.warn('Failed to fetch equipment maintenance optimization, using mock data:', error);
 
             // Generate maintenance optimization for actual equipment
-            return enhancedAssetData.map(asset => {
+            return allHierarchicalEquipment.map(asset => {
                 const config = equipmentMonitoringConfig[asset.name as keyof typeof equipmentMonitoringConfig];
                 const currentStrategy = config?.maintenanceStrategy || 'preventive';
                 const recommendedStrategy = currentStrategy === 'reactive' ? 'predictive' : 'prescriptive';
@@ -2283,22 +2287,214 @@ class MLService {
 
     // Get all equipment with monitoring configuration
     getMonitoredEquipment() {
-        return enhancedAssetData.filter(asset =>
+        return allHierarchicalEquipment.filter(asset =>
             equipmentMonitoringConfig[asset.name as keyof typeof equipmentMonitoringConfig]
         );
     }
 
     // Get equipment by category
     getEquipmentByCategory(category: string) {
-        return enhancedAssetData.filter(asset => asset.category === category);
+        return allHierarchicalEquipment.filter(asset => asset.category === category);
     }
 
     // Get critical equipment (high priority)
     getCriticalEquipment() {
-        return enhancedAssetData.filter(asset => {
+        return allHierarchicalEquipment.filter(asset => {
             const config = equipmentMonitoringConfig[asset.name as keyof typeof equipmentMonitoringConfig];
             return config?.priority === 'critical' || config?.priority === 'high';
         });
+    }
+
+    // New API functions for Python backend integration
+    /**
+     * Get Remaining Useful Life (RUL) prediction from Python backend.
+     * @param equipmentId Equipment identifier
+     * @param inputData Equipment and sensor data
+     */
+    async getRULPrediction(equipmentId: string, inputData: any): Promise<any> {
+        try {
+            const response = await fetch(`http://localhost:8000/api/rul/predict`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ equipmentId, ...inputData })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('RUL prediction failed:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get anomaly detection result from Python backend.
+     * @param equipmentId Equipment identifier
+     * @param inputData Equipment and sensor data
+     */
+    async getAnomalyDetection(equipmentId: string, inputData: any): Promise<any> {
+        try {
+            const response = await fetch(`http://localhost:8000/api/anomaly/detect`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ equipmentId, ...inputData })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Anomaly detection failed:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get optimized maintenance schedule from Python backend.
+     * @param equipmentList List of equipment
+     * @param rulPredictions List of RUL predictions
+     * @param constraints Optimization constraints
+     */
+    async getMaintenanceOptimization(equipmentList: any[], rulPredictions: any[], constraints: any): Promise<any[]> {
+        try {
+            const response = await fetch(`http://localhost:8000/api/maintenance/optimize`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ equipmentList, rulPredictions, constraints })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Maintenance optimization failed:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get Weibull analysis from Python backend.
+     * @param failureTimes Array of failure times
+     */
+    async getWeibullAnalysis(failureTimes: number[]): Promise<any> {
+        try {
+            const response = await fetch(`http://localhost:8000/api/reliability/weibull`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ failureTimes })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Weibull analysis failed:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get risk assessment from Python backend.
+     * @param equipmentId Equipment identifier
+     * @param inputData Equipment and sensor data
+     */
+    async getRiskAssessment(equipmentId: string, inputData: any): Promise<any> {
+        try {
+            const response = await fetch(`http://localhost:8000/api/risk/assess`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ equipmentId, ...inputData })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Risk assessment failed:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get RCFA (Root Cause Failure Analysis) from Python backend.
+     * @param problemStatement Problem statement
+     * @param whys List of 'why' answers
+     */
+    async getRCFAAnalysis(problemStatement: string, whys: string[]): Promise<any> {
+        try {
+            const response = await fetch(`http://localhost:8000/api/rcfa/analyze`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ problemStatement, whys })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('RCFA analysis failed:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get PFMEA worksheet from Python backend.
+     * @param equipmentId Equipment identifier
+     * @param failureModes List of failure modes
+     */
+    async getPFMEAWorksheet(equipmentId: string, failureModes: any[]): Promise<any> {
+        try {
+            const response = await fetch(`http://localhost:8000/api/pfmea/worksheet`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ equipment_id: equipmentId, failure_modes: failureModes })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('PFMEA worksheet failed:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get Pareto analysis from Python backend.
+     * @param failureModes List of failure modes
+     */
+    async getParetoAnalysis(failureModes: any[]): Promise<any> {
+        try {
+            const response = await fetch(`http://localhost:8000/api/pareto`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ failure_modes: failureModes })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Pareto analysis failed:', error);
+            throw error;
+        }
     }
 }
 

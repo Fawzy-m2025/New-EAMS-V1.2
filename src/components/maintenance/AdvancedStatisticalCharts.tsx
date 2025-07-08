@@ -9,6 +9,8 @@ import {
   Activity, Target, Clock, Users, AlertTriangle, CheckCircle
 } from 'lucide-react';
 import type { WorkOrder } from '@/types/eams';
+import { useAssetContext } from '@/contexts/AssetContext';
+import { vibrationHistory } from '@/utils/enhancedMLPipelineData';
 
 interface AdvancedStatisticalChartsProps {
   workOrders: WorkOrder[];

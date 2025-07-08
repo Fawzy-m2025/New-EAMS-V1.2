@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,11 +7,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { 
-  Bot, Zap, AlertTriangle, CheckCircle, Clock, Settings, 
+import {
+  Bot, Zap, AlertTriangle, CheckCircle, Clock, Settings,
   Lightbulb, Target, TrendingUp, Activity, Wrench
 } from 'lucide-react';
 import type { WorkOrder, Priority, Equipment } from '@/types/eams';
+import { useAssetContext } from '@/contexts/AssetContext';
 
 interface AIWorkOrderCreatorProps {
   onSubmit: (workOrder: Partial<WorkOrder>) => void;
@@ -37,114 +37,16 @@ export function AIWorkOrderCreator({ onSubmit, onClose }: AIWorkOrderCreatorProp
     estimatedHours: 0
   });
 
-  // Mock equipment data with condition monitoring
-  const mockEquipments: Equipment[] = [
-    {
-      id: "EQ-001",
-      name: "Main Centrifugal Pump P-001",
-      type: "mechanical",
-      category: "pump",
-      manufacturer: "Grundfos",
-      model: "CR64-2",
-      serialNumber: "GF2024001",
-      location: {
-        building: "Pump House 1",
-        room: "Room A"
-      },
-      specifications: {
-        ratedPower: 15,
-        flowRate: 250,
-        pressure: 8.5
-      },
-      status: "operational",
-      condition: "fair",
-      conditionMonitoring: {
-        vibration: {
-          rmsVelocity: 4.2,
-          peakVelocity: 8.1,
-          displacement: 0.15,
-          frequency: [50, 100, 150],
-          spectrum: [2.1, 4.2, 1.8],
-          iso10816Zone: 'B',
-          measurementDate: "2024-12-15",
-          measuredBy: "Tech-001"
-        },
-        alignment: {
-          angularMisalignment: 0.08,
-          parallelMisalignment: 0.12,
-          verticalOffset: 0.05,
-          horizontalOffset: 0.03,
-          tolerance: 0.1,
-          status: 'marginal',
-          measurementDate: "2024-12-10"
-        },
-        thermography: {
-          maxTemperature: 75,
-          avgTemperature: 65,
-          hotSpots: [],
-          baseline: 60,
-          deltaT: 15,
-          measurementDate: "2024-12-12"
-        },
-        lastUpdated: "2024-12-15",
-        overallCondition: "fair",
-        alerts: [
-          {
-            id: "ALT-001",
-            type: "vibration",
-            severity: "warning",
-            message: "Elevated vibration levels detected",
-            threshold: 3.5,
-            actualValue: 4.2,
-            timestamp: "2024-12-15T10:30:00Z",
-            acknowledged: false
-          }
-        ]
-      },
-      failureHistory: [],
-      maintenanceHistory: [],
-      createdAt: "2024-01-01",
-      updatedAt: "2024-12-15"
-    },
-    {
-      id: "EQ-002",
-      name: "Emergency Generator G-001",
-      type: "mechanical",
-      category: "motor",
-      manufacturer: "Caterpillar",
-      model: "C32",
-      serialNumber: "CAT2024002",
-      location: {
-        building: "Generator Room",
-        room: "Building B"
-      },
-      specifications: {
-        ratedPower: 1000,
-        ratedVoltage: 480,
-        frequency: 60
-      },
-      status: "operational",
-      condition: "good",
-      conditionMonitoring: {
-        lastUpdated: "2024-12-15",
-        overallCondition: "good",
-        alerts: []
-      },
-      failureHistory: [],
-      maintenanceHistory: [],
-      createdAt: "2024-01-01",
-      updatedAt: "2024-12-15"
-    }
-  ];
+  const { monitoredEquipment, vibrationHistory } = useAssetContext();
 
   const analyzeEquipment = async (equipment: Equipment) => {
     setIsAnalyzing(true);
-    
+
     // Simulate AI analysis based on condition monitoring data
     setTimeout(() => {
       const alerts = equipment.conditionMonitoring.alerts;
       const condition = equipment.conditionMonitoring.overallCondition;
-      
+
       let suggestions = {
         title: '',
         description: '',
@@ -217,7 +119,7 @@ export function AIWorkOrderCreator({ onSubmit, onClose }: AIWorkOrderCreatorProp
   };
 
   const handleEquipmentSelect = (equipmentId: string) => {
-    const equipment = mockEquipments.find(eq => eq.id === equipmentId);
+    const equipment = monitoredEquipment.find(eq => eq.id === equipmentId);
     if (equipment) {
       setSelectedEquipment(equipment);
       analyzeEquipment(equipment);
@@ -237,7 +139,7 @@ export function AIWorkOrderCreator({ onSubmit, onClose }: AIWorkOrderCreatorProp
       estimatedHours: formData.estimatedHours,
       procedures: aiSuggestions.procedures
     };
-    
+
     onSubmit(workOrderData);
     onClose();
   };
@@ -274,7 +176,7 @@ export function AIWorkOrderCreator({ onSubmit, onClose }: AIWorkOrderCreatorProp
                 <SelectValue placeholder="Choose equipment for analysis..." />
               </SelectTrigger>
               <SelectContent>
-                {mockEquipments.map((equipment) => (
+                {monitoredEquipment.map((equipment) => (
                   <SelectItem key={equipment.id} value={equipment.id}>
                     <div className="flex items-center justify-between w-full">
                       <span>{equipment.name}</span>
@@ -372,9 +274,9 @@ export function AIWorkOrderCreator({ onSubmit, onClose }: AIWorkOrderCreatorProp
                       <div className="font-medium">Priority</div>
                       <Badge className={
                         aiSuggestions.priority === 'critical' ? 'bg-red-100 text-red-800' :
-                        aiSuggestions.priority === 'high' ? 'bg-orange-100 text-orange-800' :
-                        aiSuggestions.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-green-100 text-green-800'
+                          aiSuggestions.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                            aiSuggestions.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-green-100 text-green-800'
                       }>
                         {aiSuggestions.priority}
                       </Badge>
@@ -448,8 +350,8 @@ export function AIWorkOrderCreator({ onSubmit, onClose }: AIWorkOrderCreatorProp
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>Priority</Label>
-                    <Select 
-                      value={formData.priority} 
+                    <Select
+                      value={formData.priority}
                       onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value as Priority }))}
                     >
                       <SelectTrigger>

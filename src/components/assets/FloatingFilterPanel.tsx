@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Search, X, Filter, RotateCcw } from "lucide-react";
 import type { EquipmentType, EquipmentCategory, EquipmentStatus, ConditionStatus, EAMSFilter } from "@/types/eams";
-import { assetCategories, assetManufacturers, pumpStations } from "@/data/enhancedAssetData";
+import { hierarchicalAssetStructure, equipmentSummary } from "@/data/hierarchicalAssetData";
 
 interface FloatingFilterPanelProps {
   filters: EAMSFilter;
@@ -17,7 +17,26 @@ interface FloatingFilterPanelProps {
 }
 
 export function FloatingFilterPanel({ filters, onFiltersChange, children }: FloatingFilterPanelProps) {
-  const activeFiltersCount = Object.values(filters).filter(value => 
+  // Generate filter options from hierarchical data
+  const allEquipment = hierarchicalAssetStructure.allEquipment;
+
+  const assetCategories = [
+    { value: 'pump', label: 'Pump' },
+    { value: 'motor', label: 'Motor' },
+    { value: 'valve', label: 'Valve' },
+    { value: 'sensor', label: 'Sensor' },
+    { value: 'compressor', label: 'Compressor' },
+    { value: 'tank', label: 'Tank' },
+    { value: 'filter', label: 'Filter' }
+  ];
+
+  const pumpStations = [...new Set(hierarchicalAssetStructure.zones.flatMap(zone =>
+    zone.stations.map(station => station.name)
+  ))];
+
+  const assetManufacturers = [...new Set(allEquipment.map(eq => eq.manufacturer))];
+
+  const activeFiltersCount = Object.values(filters).filter(value =>
     Array.isArray(value) ? value.length > 0 : value
   ).length;
 
@@ -87,8 +106,8 @@ export function FloatingFilterPanel({ filters, onFiltersChange, children }: Floa
         <div className="relative">
           {children}
           {activeFiltersCount > 0 && (
-            <Badge 
-              variant="destructive" 
+            <Badge
+              variant="destructive"
               className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
             >
               {activeFiltersCount}

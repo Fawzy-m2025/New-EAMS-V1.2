@@ -87,79 +87,79 @@ const App = () => (
         <AssetProvider>
           <BrowserRouter>
             <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/test" element={<TestPage />} />
-            <Route path="/financial" element={<Financial />} />
+              <Route path="/" element={<Index />} />
+              <Route path="/test" element={<TestPage />} />
+              <Route path="/financial" element={<Financial />} />
 
-            {/* Demo Routes */}
-            <Route path="/demo/charts" element={<ChartJSDemo />} />
+              {/* Demo Routes */}
+              <Route path="/demo/charts" element={<ChartJSDemo />} />
 
-            {/* Asset Management Routes */}
-            <Route path="/assets/registry" element={<EnhancedAssetRegistry />} />
-            <Route path="/assets/tracking" element={<AssetTracking />} />
-            <Route path="/assets/depreciation" element={<AssetDepreciation />} />
-            <Route path="/assets/performance" element={<AssetPerformance />} />
+              {/* Asset Management Routes */}
+              <Route path="/assets/registry" element={<EnhancedAssetRegistry />} />
+              <Route path="/assets/tracking" element={<AssetTracking />} />
+              <Route path="/assets/depreciation" element={<AssetDepreciation />} />
+              <Route path="/assets/performance" element={<AssetPerformance />} />
 
-            {/* Maintenance Routes */}
-            <Route path="/maintenance/work-orders" element={<WorkOrders />} />
-            <Route path="/maintenance/condition-monitoring" element={<ConditionMonitoring />} />
-            <Route path="/maintenance/preventive" element={<PreventiveMaintenance />} />
-            <Route path="/maintenance/predictive" element={<PredictiveMaintenance />} />
-            <Route path="/maintenance/spare-parts" element={<SpareParts />} />
+              {/* Maintenance Routes */}
+              <Route path="/maintenance/work-orders" element={<WorkOrders />} />
+              <Route path="/maintenance/condition-monitoring" element={<ConditionMonitoring />} />
+              <Route path="/maintenance/preventive" element={<PreventiveMaintenance />} />
+              <Route path="/maintenance/predictive" element={<PredictiveMaintenance />} />
+              <Route path="/maintenance/spare-parts" element={<SpareParts />} />
 
-            {/* Financial Routes */}
-            <Route path="/financial/gl" element={<GeneralLedger />} />
-            <Route path="/financial/ap" element={<AccountsPayable />} />
-            <Route path="/financial/ar" element={<AccountsReceivable />} />
-            <Route path="/financial/budgeting" element={<Budgeting />} />
+              {/* Financial Routes */}
+              <Route path="/financial/gl" element={<GeneralLedger />} />
+              <Route path="/financial/ap" element={<AccountsPayable />} />
+              <Route path="/financial/ar" element={<AccountsReceivable />} />
+              <Route path="/financial/budgeting" element={<Budgeting />} />
 
-            {/* HR Routes */}
-            <Route path="/hr/employees" element={<Employees />} />
-            <Route path="/hr/payroll" element={<Payroll />} />
-            <Route path="/hr/attendance" element={<Attendance />} />
-            <Route path="/hr/performance" element={<Performance />} />
-            <Route path="/hr/training" element={<Training />} />
+              {/* HR Routes */}
+              <Route path="/hr/employees" element={<Employees />} />
+              <Route path="/hr/payroll" element={<Payroll />} />
+              <Route path="/hr/attendance" element={<Attendance />} />
+              <Route path="/hr/performance" element={<Performance />} />
+              <Route path="/hr/training" element={<Training />} />
 
-            {/* Inventory Routes */}
-            <Route path="/inventory/stock" element={<StockManagement />} />
-            <Route path="/inventory/procurement" element={<Procurement />} />
-            <Route path="/inventory/warehouses" element={<Warehouses />} />
-            <Route path="/inventory/suppliers" element={<Suppliers />} />
+              {/* Inventory Routes */}
+              <Route path="/inventory/stock" element={<StockManagement />} />
+              <Route path="/inventory/procurement" element={<Procurement />} />
+              <Route path="/inventory/warehouses" element={<Warehouses />} />
+              <Route path="/inventory/suppliers" element={<Suppliers />} />
 
-            {/* Project Routes */}
-            <Route path="/projects/list" element={<ProjectList />} />
-            <Route path="/projects/planning" element={<ProjectPlanning />} />
-            <Route path="/projects/resources" element={<ProjectResources />} />
-            <Route path="/projects/timeline" element={<ProjectTimeline />} />
+              {/* Project Routes */}
+              <Route path="/projects/list" element={<ProjectList />} />
+              <Route path="/projects/planning" element={<ProjectPlanning />} />
+              <Route path="/projects/resources" element={<ProjectResources />} />
+              <Route path="/projects/timeline" element={<ProjectTimeline />} />
 
-            {/* Fleet Routes */}
-            <Route path="/fleet/vehicles" element={<Vehicles />} />
-            <Route path="/fleet/maintenance" element={<FleetMaintenance />} />
-            <Route path="/fleet/fuel" element={<FuelManagement />} />
-            <Route path="/fleet/drivers" element={<DriverManagement />} />
+              {/* Fleet Routes */}
+              <Route path="/fleet/vehicles" element={<Vehicles />} />
+              <Route path="/fleet/maintenance" element={<FleetMaintenance />} />
+              <Route path="/fleet/fuel" element={<FuelManagement />} />
+              <Route path="/fleet/drivers" element={<DriverManagement />} />
 
-            {/* HSE Routes */}
-            <Route path="/hse/incidents" element={<Incidents />} />
-            <Route path="/hse/audits" element={<SafetyAudits />} />
-            <Route path="/hse/compliance" element={<Compliance />} />
-            <Route path="/hse/training" element={<HSETraining />} />
+              {/* HSE Routes */}
+              <Route path="/hse/incidents" element={<Incidents />} />
+              <Route path="/hse/audits" element={<SafetyAudits />} />
+              <Route path="/hse/compliance" element={<Compliance />} />
+              <Route path="/hse/training" element={<HSETraining />} />
 
-            {/* Engineering Routes */}
-            <Route path="/engineering/mechanical" element={<Mechanical />} />
-            <Route path="/engineering/electrical" element={<Electrical />} />
-            <Route path="/engineering/civil" element={<Civil />} />
-            <Route path="/engineering/instrumentation" element={<Instrumentation />} />
+              {/* Engineering Routes */}
+              <Route path="/engineering/mechanical" element={<Mechanical />} />
+              <Route path="/engineering/electrical" element={<Electrical />} />
+              <Route path="/engineering/civil" element={<Civil />} />
+              <Route path="/engineering/instrumentation" element={<Instrumentation />} />
 
-            {/* Analytics Routes */}
-            <Route path="/analytics/dashboards" element={<AnalyticsDashboards />} />
-            <Route path="/analytics/kpi-dashboard" element={<KPIDashboard />} />
-            <Route path="/analytics/financial" element={<FinancialReports />} />
-            <Route path="/analytics/assets" element={<AssetReports />} />
-            <Route path="/analytics/custom-reports" element={<CustomReports />} />
+              {/* Analytics Routes */}
+              <Route path="/analytics/dashboards" element={<AnalyticsDashboards />} />
+              <Route path="/analytics/kpi-dashboard" element={<KPIDashboard />} />
+              <Route path="/analytics/financial" element={<FinancialReports />} />
+              <Route path="/analytics/assets" element={<AssetReports />} />
+              <Route path="/analytics/custom-reports" element={<CustomReports />} />
 
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
         </AssetProvider>
       </TooltipProvider>
     </ThemeProvider>

@@ -6,17 +6,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useMemo } from "react";
-import { 
+import {
   Plus, Download, Upload, Eye, Edit, Trash2,
   Settings, Activity, AlertTriangle, TrendingUp, Gauge, Thermometer, Zap,
   Wrench, Calendar, BarChart3, Cog, Package,
-  Table as TableIcon, LayoutGrid, Filter, RefreshCw
+  Table as TableIcon, LayoutGrid, Filter, RefreshCw, TreePine,
+  Network, Building, Layers, ChevronRight, ChevronDown
 } from "lucide-react";
 import type { Equipment, EquipmentType, EquipmentCategory, EquipmentStatus, ConditionStatus, EAMSFilter } from "@/types/eams";
 import { EnhancedAssetFormModal } from "@/components/assets/EnhancedAssetFormModal";
 import { EnhancedAssetDetailsModal } from "@/components/assets/EnhancedAssetDetailsModal";
 import { FloatingFilterPanel } from "@/components/assets/FloatingFilterPanel";
 import { useAssetContext } from "@/contexts/AssetContext";
+import { hierarchicalAssetStructure } from "@/data/hierarchicalAssetData";
 
 const EnhancedAssetRegistry = () => {
   const { equipment, setEquipment, resetData, simulateRealTimeUpdate } = useAssetContext();
@@ -25,8 +27,9 @@ const EnhancedAssetRegistry = () => {
   const [showFormModal, setShowFormModal] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
   const [activeTab, setActiveTab] = useState('overview');
-  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
-  
+  const [viewMode, setViewMode] = useState<'table' | 'cards' | 'tree'>('table');
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+
   const [filters, setFilters] = useState<EAMSFilter>({
     search: '',
     equipmentTypes: [],
@@ -42,10 +45,10 @@ const EnhancedAssetRegistry = () => {
     if (!searchTerm) return true;
     const search = searchTerm.toLowerCase();
     const target = targetString.toLowerCase();
-    
+
     // Direct substring match (highest priority)
     if (target.includes(search)) return true;
-    
+
     // Fuzzy matching - allow for typos and partial matches
     let searchIndex = 0;
     for (let i = 0; i < target.length && searchIndex < search.length; i++) {
@@ -66,43 +69,53 @@ const EnhancedAssetRegistry = () => {
           eq.model,
           eq.serialNumber,
           eq.assetTag,
-          eq.location?.pumpStation || '',
+          eq.location?.zone || '',
+          eq.location?.station || '',
+          eq.location?.line || '',
+          eq.location?.system || '',
           eq.location?.building || '',
           eq.location?.room || '',
+          eq.path || '',
           eq.category.replace('_', ' ')
         ];
-        
-        const hasMatch = searchableFields.some(field => 
+
+        const hasMatch = searchableFields.some(field =>
           fuzzySearch(filters.search, field)
         );
-        
+
         if (!hasMatch) return false;
       }
-      
+
       if (filters.equipmentTypes?.length && !filters.equipmentTypes.includes(eq.type)) {
         return false;
       }
-      
+
       if (filters.categories?.length && !filters.categories.includes(eq.category)) {
         return false;
       }
-      
+
       if (filters.status?.length && !filters.status.includes(eq.status)) {
         return false;
       }
-      
+
       if (filters.conditions?.length && !filters.conditions.includes(eq.condition)) {
         return false;
       }
 
-      if (filters.locations?.length && !filters.locations.includes(eq.location?.pumpStation || '')) {
-        return false;
+      if (filters.locations?.length) {
+        const locationMatches = filters.locations.some(location =>
+          (eq.location?.zone || '').includes(location) ||
+          (eq.location?.station || '').includes(location) ||
+          (eq.location?.line || '').includes(location) ||
+          (eq.location?.system || '').includes(location)
+        );
+        if (!locationMatches) return false;
       }
 
       if (filters.manufacturers?.length && !filters.manufacturers.includes(eq.manufacturer)) {
         return false;
       }
-      
+
       return true;
     });
   }, [equipment, filters]);
@@ -110,7 +123,7 @@ const EnhancedAssetRegistry = () => {
   // Calculate enhanced KPIs
   const totalEquipment = filteredEquipment.length;
   const operationalEquipment = filteredEquipment.filter(eq => eq.status === 'operational').length;
-  const criticalAlerts = filteredEquipment.reduce((sum, eq) => 
+  const criticalAlerts = filteredEquipment.reduce((sum, eq) =>
     sum + (eq.conditionMonitoring?.alerts?.filter(alert => alert.severity === 'critical').length || 0), 0
   );
   const avgConditionScore = filteredEquipment.reduce((sum, eq) => {
@@ -125,6 +138,31 @@ const EnhancedAssetRegistry = () => {
       distribution[eq.type]++;
     });
     return distribution;
+  }, [filteredEquipment]);
+
+  // Tree structure for hierarchical view
+  const treeStructure = useMemo(() => {
+    const tree: any = {};
+
+    filteredEquipment.forEach(equipment => {
+      const zone = equipment.location?.zone || 'Unknown Zone';
+      const station = equipment.location?.station || 'Unknown Station';
+      const line = equipment.location?.line || equipment.location?.system || 'Station Equipment';
+
+      if (!tree[zone]) {
+        tree[zone] = {};
+      }
+      if (!tree[zone][station]) {
+        tree[zone][station] = {};
+      }
+      if (!tree[zone][station][line]) {
+        tree[zone][station][line] = [];
+      }
+
+      tree[zone][station][line].push(equipment);
+    });
+
+    return tree;
   }, [filteredEquipment]);
 
   const getStatusColor = (status: EquipmentStatus) => {
@@ -232,27 +270,27 @@ const EnhancedAssetRegistry = () => {
 
         {/* Enhanced KPI Dashboard */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard 
+          <StatCard
             title="Total Assets"
             value={totalEquipment.toString()}
             icon={<Package className="text-primary h-4 w-4" />}
             trend={{ value: 12, isPositive: true }}
             description={`${assetTypeDistribution.mechanical}M | ${assetTypeDistribution.electrical}E | ${assetTypeDistribution.instrumentation}I`}
           />
-          <StatCard 
+          <StatCard
             title="Operational Rate"
             value={`${Math.round((operationalEquipment / totalEquipment) * 100)}%`}
             icon={<Activity className="text-green-600 h-4 w-4" />}
             trend={{ value: 5, isPositive: true }}
             description={`${operationalEquipment}/${totalEquipment} assets active`}
           />
-          <StatCard 
+          <StatCard
             title="Critical Alerts"
             value={criticalAlerts.toString()}
             icon={<AlertTriangle className="text-red-600 h-4 w-4" />}
             description="Immediate attention required"
           />
-          <StatCard 
+          <StatCard
             title="Health Score"
             value={avgConditionScore.toFixed(1)}
             icon={<TrendingUp className="text-blue-600 h-4 w-4" />}
@@ -308,7 +346,40 @@ const EnhancedAssetRegistry = () => {
                       >
                         <LayoutGrid className="h-4 w-4" />
                       </Button>
+                      <Button
+                        variant={viewMode === 'tree' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => setViewMode('tree')}
+                        className="gap-2"
+                        title="Tree view"
+                      >
+                        <TreePine className="h-4 w-4" />
+                      </Button>
                     </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={resetData}
+                      className="gap-2"
+                      title="Reset to new hierarchical equipment data"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                      Reset Data
+                    </Button>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedEquipment(null);
+                        setFormMode('create');
+                        setShowFormModal(true);
+                      }}
+                      className="gap-2"
+                      title="Test hierarchical form"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Equipment
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
@@ -372,10 +443,17 @@ const EnhancedAssetRegistry = () => {
                               </div>
                             </TableCell>
                             <TableCell className="text-sm">
-                              <div>{eq.location?.pumpStation}</div>
-                              <div className="text-muted-foreground">
-                                {eq.location?.building} - {eq.location?.room}
+                              <div className="font-medium">
+                                {eq.location?.station || 'N/A'}
                               </div>
+                              <div className="text-muted-foreground">
+                                {eq.location?.zone} • {eq.location?.line || eq.location?.system}
+                              </div>
+                              {eq.location?.building && (
+                                <div className="text-xs text-muted-foreground">
+                                  {eq.location.building} - {eq.location.room}
+                                </div>
+                              )}
                             </TableCell>
                             <TableCell>
                               <Badge className={getStatusColor(eq.status)}>
@@ -459,7 +537,11 @@ const EnhancedAssetRegistry = () => {
                           <div className="text-xs text-muted-foreground">{eq.manufacturer} {eq.model}</div>
                           <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">Location</span>
-                            <span className="font-medium">{eq.location?.pumpStation}</span>
+                            <span className="font-medium">{eq.location?.station}</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">Path</span>
+                            <span className="text-muted-foreground">{eq.location?.zone} • {eq.location?.line || eq.location?.system}</span>
                           </div>
                           <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">Asset Tag</span>
@@ -472,17 +554,17 @@ const EnhancedAssetRegistry = () => {
                             </div>
                           )}
                           <div className="flex gap-1 pt-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
+                            <Button
+                              variant="outline"
+                              size="sm"
                               className="flex-1"
                               onClick={() => handleViewAsset(eq)}
                             >
                               <Eye className="h-4 w-4 mr-1" />
                               View
                             </Button>
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               size="sm"
                               onClick={() => handleEditAsset(eq)}
                             >
@@ -490,6 +572,173 @@ const EnhancedAssetRegistry = () => {
                             </Button>
                           </div>
                         </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+
+                {/* Tree View */}
+                {viewMode === 'tree' && (
+                  <div className="space-y-3">
+                    {Object.entries(treeStructure).map(([zoneName, stations]) => (
+                      <Card key={zoneName} className="overflow-hidden">
+                        <div
+                          className="flex items-center gap-3 p-4 bg-card hover:bg-accent/50 cursor-pointer transition-colors border-b"
+                          onClick={() => {
+                            const nodeId = `zone-${zoneName}`;
+                            const newExpanded = new Set(expandedNodes);
+                            if (newExpanded.has(nodeId)) {
+                              newExpanded.delete(nodeId);
+                            } else {
+                              newExpanded.add(nodeId);
+                            }
+                            setExpandedNodes(newExpanded);
+                          }}
+                        >
+                          {expandedNodes.has(`zone-${zoneName}`) ? (
+                            <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                          ) : (
+                            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                          )}
+                          <Network className="h-5 w-5 text-primary" />
+                          <span className="font-semibold text-lg text-foreground">{zoneName}</span>
+                          <Badge variant="secondary" className="ml-auto">
+                            {Object.values(stations as any).reduce((sum: number, stationEquipment: any) =>
+                              sum + Object.values(stationEquipment).reduce((stationSum: number, lineEquipment: any) =>
+                                stationSum + (Array.isArray(lineEquipment) ? lineEquipment.length : 0), 0), 0
+                            )} items
+                          </Badge>
+                        </div>
+
+                        {expandedNodes.has(`zone-${zoneName}`) && (
+                          <div className="p-4 space-y-3 bg-muted/20">
+                            {Object.entries(stations as any).map(([stationName, lines]) => (
+                              <div key={stationName} className="border-l-2 border-primary/30 pl-4">
+                                <div
+                                  className="flex items-center gap-3 p-3 bg-card rounded-lg cursor-pointer hover:bg-accent/50 transition-colors border"
+                                  onClick={() => {
+                                    const nodeId = `station-${zoneName}-${stationName}`;
+                                    const newExpanded = new Set(expandedNodes);
+                                    if (newExpanded.has(nodeId)) {
+                                      newExpanded.delete(nodeId);
+                                    } else {
+                                      newExpanded.add(nodeId);
+                                    }
+                                    setExpandedNodes(newExpanded);
+                                  }}
+                                >
+                                  {expandedNodes.has(`station-${zoneName}-${stationName}`) ? (
+                                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                  ) : (
+                                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                  )}
+                                  <Building className="h-4 w-4 text-primary" />
+                                  <span className="font-medium text-foreground">{stationName}</span>
+                                  <Badge variant="outline" className="ml-auto">
+                                    {Object.values(lines as any).reduce((sum: number, lineEquipment: any) =>
+                                      sum + (Array.isArray(lineEquipment) ? lineEquipment.length : 0), 0
+                                    )} items
+                                  </Badge>
+                                </div>
+
+                                {expandedNodes.has(`station-${zoneName}-${stationName}`) && (
+                                  <div className="mt-3 space-y-2">
+                                    {Object.entries(lines as any).map(([lineName, equipmentList]) => (
+                                      <div key={lineName} className="border-l-2 border-primary/20 pl-4">
+                                        <div
+                                          className="flex items-center gap-3 p-2 bg-muted/30 rounded cursor-pointer hover:bg-accent/30 transition-colors"
+                                          onClick={() => {
+                                            const nodeId = `line-${zoneName}-${stationName}-${lineName}`;
+                                            const newExpanded = new Set(expandedNodes);
+                                            if (newExpanded.has(nodeId)) {
+                                              newExpanded.delete(nodeId);
+                                            } else {
+                                              newExpanded.add(nodeId);
+                                            }
+                                            setExpandedNodes(newExpanded);
+                                          }}
+                                        >
+                                          {expandedNodes.has(`line-${zoneName}-${stationName}-${lineName}`) ? (
+                                            <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                                          ) : (
+                                            <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                                          )}
+                                          <Layers className="h-4 w-4 text-primary" />
+                                          <span className="font-medium text-sm text-foreground">{lineName}</span>
+                                          <Badge variant="outline" className="ml-auto text-xs">
+                                            {Array.isArray(equipmentList) ? equipmentList.length : 0} items
+                                          </Badge>
+                                        </div>
+
+                                        {expandedNodes.has(`line-${zoneName}-${stationName}-${lineName}`) && (
+                                          <div className="mt-3 space-y-2">
+                                            {Array.isArray(equipmentList) && equipmentList.map((equipment: Equipment) => (
+                                              <div
+                                                key={equipment.id}
+                                                className="flex items-center gap-3 p-3 bg-card border rounded-lg hover:bg-accent/30 transition-colors cursor-pointer"
+                                                onClick={() => handleViewAsset(equipment)}
+                                              >
+                                                <div className="flex items-center gap-3 flex-1">
+                                                  {equipment.category === 'pump' && <Activity className="h-4 w-4 text-primary" />}
+                                                  {equipment.category === 'motor' && <Zap className="h-4 w-4 text-primary" />}
+                                                  {equipment.category === 'valve' && <Settings className="h-4 w-4 text-primary" />}
+                                                  {equipment.category === 'strainer' && <Filter className="h-4 w-4 text-primary" />}
+                                                  {equipment.category === 'sensor' && <Gauge className="h-4 w-4 text-primary" />}
+                                                  {equipment.category === 'actuator' && <Wrench className="h-4 w-4 text-primary" />}
+                                                  {equipment.category === 'tank' && <Package className="h-4 w-4 text-primary" />}
+                                                  {equipment.category === 'compressor' && <Activity className="h-4 w-4 text-primary" />}
+
+                                                  <div className="flex-1">
+                                                    <div className="font-medium text-sm text-foreground">{equipment.name}</div>
+                                                    <div className="text-xs text-muted-foreground">
+                                                      {equipment.manufacturer} • {equipment.model} • {equipment.assetTag}
+                                                    </div>
+                                                  </div>
+
+                                                  <div className="flex items-center gap-2">
+                                                    <Badge className={getStatusColor(equipment.status)} variant="secondary">
+                                                      {equipment.status}
+                                                    </Badge>
+                                                    <Badge className={getConditionColor(equipment.condition)} variant="secondary">
+                                                      {equipment.condition}
+                                                    </Badge>
+                                                  </div>
+
+                                                  <div className="flex gap-1">
+                                                    <Button
+                                                      variant="ghost"
+                                                      size="sm"
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleViewAsset(equipment);
+                                                      }}
+                                                    >
+                                                      <Eye className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button
+                                                      variant="ghost"
+                                                      size="sm"
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleEditAsset(equipment);
+                                                      }}
+                                                    >
+                                                      <Edit className="h-4 w-4" />
+                                                    </Button>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </Card>
                     ))}
                   </div>
@@ -539,17 +788,17 @@ const EnhancedAssetRegistry = () => {
                         </div>
                       )}
                       <div className="flex gap-2 pt-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
+                        <Button
+                          variant="outline"
+                          size="sm"
                           className="flex-1"
                           onClick={() => handleViewAsset(eq)}
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           Details
                         </Button>
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => handleEditAsset(eq)}
                         >
@@ -607,17 +856,17 @@ const EnhancedAssetRegistry = () => {
                         </div>
                       )}
                       <div className="flex gap-2 pt-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
+                        <Button
+                          variant="outline"
+                          size="sm"
                           className="flex-1"
                           onClick={() => handleViewAsset(eq)}
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           Details
                         </Button>
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => handleEditAsset(eq)}
                         >
@@ -719,7 +968,7 @@ const EnhancedAssetRegistry = () => {
                             <div>
                               <div className="font-medium">{eq.name}</div>
                               <div className="text-sm text-muted-foreground">
-                                {eq.location.pumpStation} • {eq.assetTag}
+                                {eq.location?.station} • {eq.assetTag}
                               </div>
                             </div>
                           </div>
@@ -791,10 +1040,9 @@ const EnhancedAssetRegistry = () => {
                       .map(alert => (
                         <div key={alert.id} className="flex items-center justify-between p-3 border rounded-lg">
                           <div className="flex items-center gap-2">
-                            <AlertTriangle className={`h-4 w-4 ${
-                              alert.severity === 'critical' ? 'text-red-500' : 
+                            <AlertTriangle className={`h-4 w-4 ${alert.severity === 'critical' ? 'text-red-500' :
                               alert.severity === 'warning' ? 'text-orange-500' : 'text-blue-500'
-                            }`} />
+                              }`} />
                             <div>
                               <div className="text-sm font-medium">{alert.equipmentName}</div>
                               <div className="text-xs text-muted-foreground">{alert.message}</div>
@@ -818,12 +1066,14 @@ const EnhancedAssetRegistry = () => {
           onOpenChange={setShowFormModal}
           equipment={selectedEquipment}
           onSave={handleSaveAsset}
+          zones={hierarchicalAssetStructure.zones}
         />
 
         <EnhancedAssetDetailsModal
           open={showDetailModal}
           onOpenChange={setShowDetailModal}
           equipment={selectedEquipment}
+          zones={hierarchicalAssetStructure.zones}
           onEdit={() => {
             setShowDetailModal(false);
             handleEditAsset(selectedEquipment!);

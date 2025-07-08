@@ -25,7 +25,29 @@ export const saveToLocalStorage = <T>(key: string, data: T): void => {
 export const loadFromLocalStorage = <T>(key: string, defaultData: T): T => {
   try {
     const savedData = localStorage.getItem(key);
-    return savedData ? JSON.parse(savedData) : defaultData;
+    if (!savedData) return defaultData;
+
+    const parsed = JSON.parse(savedData);
+
+    // Handle versioned data structure
+    if (key === 'equipment' && parsed.version === 'hierarchical-v1') {
+      return parsed.data;
+    }
+
+    // Handle legacy data or non-versioned data
+    if (key === 'equipment' && Array.isArray(parsed)) {
+      // Check if it's old data structure (missing hierarchical properties)
+      const hasHierarchicalData = parsed.some(item =>
+        item.zoneId || item.stationId || item.path?.includes('Zone A')
+      );
+
+      if (!hasHierarchicalData) {
+        console.log('🔄 Detected old equipment data, using default hierarchical data');
+        return defaultData;
+      }
+    }
+
+    return parsed.data || parsed;
   } catch (error) {
     console.error(`Error loading from local storage for key ${key}:`, error);
     return defaultData;

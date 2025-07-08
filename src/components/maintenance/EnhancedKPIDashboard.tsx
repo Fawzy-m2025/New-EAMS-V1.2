@@ -8,10 +8,14 @@ import {
     Clock, CheckCircle, Target, Users, Brain, Shield,
     TrendingUp, AlertTriangle, Calendar, Wrench, Gauge, DollarSign
 } from 'lucide-react';
-import type { WorkOrder } from '@/types/eams';
+import type { WorkOrder, Zone } from '@/types/eams';
+import { useAssetContext } from '@/contexts/AssetContext';
+import { getRULPredictionsFromHistory } from '@/data/enhancedMLPipelineData';
+import { calculateOverallStats, calculateHierarchyKPIs } from '@/utils/kpiCalculations';
 
 interface EnhancedKPIDashboardProps {
     workOrders: WorkOrder[];
+    zones?: Zone[]; // For dynamic KPI calculations
 }
 
 interface KPIMetric {
@@ -24,7 +28,17 @@ interface KPIMetric {
     description: string;
 }
 
-export function EnhancedKPIDashboard({ workOrders }: EnhancedKPIDashboardProps) {
+export function EnhancedKPIDashboard({ workOrders, zones = [] }: EnhancedKPIDashboardProps) {
+    const { vibrationHistory, equipment } = useAssetContext();
+    const rulPredictions = getRULPredictionsFromHistory(vibrationHistory);
+    const criticalCount = rulPredictions.filter(r => r.condition === 'Critical').length;
+    const total = rulPredictions.length;
+    const percentCritical = total > 0 ? (criticalCount / total) * 100 : 0;
+
+    // Calculate dynamic KPIs from actual equipment data
+    const overallStats = zones.length > 0 ? calculateOverallStats(zones) : null;
+    const hierarchyKPIs = equipment.length > 0 ? calculateHierarchyKPIs(equipment) : null;
+
     // Calculate comprehensive KPIs
     const calculateKPIs = (): KPIMetric[] => {
         const totalOrders = workOrders.length;
@@ -60,7 +74,7 @@ export function EnhancedKPIDashboard({ workOrders }: EnhancedKPIDashboardProps) 
             },
             {
                 name: 'Maintenance Backlog',
-                value: 3.2,
+                value: hierarchyKPIs ? Math.round(hierarchyKPIs.totalMaintenanceCost / 10000) / 10 : 3.2,
                 target: 4,
                 unit: 'weeks',
                 trend: -8,
@@ -69,7 +83,7 @@ export function EnhancedKPIDashboard({ workOrders }: EnhancedKPIDashboardProps) 
             },
             {
                 name: 'First-Pass Yield (FPY)',
-                value: 92,
+                value: hierarchyKPIs ? Math.round(hierarchyKPIs.avgReliability) : 92,
                 target: 90,
                 unit: '%',
                 trend: 3.1,
@@ -78,7 +92,7 @@ export function EnhancedKPIDashboard({ workOrders }: EnhancedKPIDashboardProps) 
             },
             {
                 name: 'Technician Utilization',
-                value: 87,
+                value: hierarchyKPIs ? Math.round(hierarchyKPIs.avgAvailability) : 87,
                 target: 80,
                 unit: '%',
                 trend: 2.4,
@@ -107,6 +121,19 @@ export function EnhancedKPIDashboard({ workOrders }: EnhancedKPIDashboardProps) 
     };
 
     const kpis = calculateKPIs();
+
+    // Add vibration-based KPI
+    const vibrationKPIs = [
+        {
+            name: 'Critical Equipment (%)',
+            value: percentCritical,
+            target: 0,
+            unit: '%',
+            trend: 0,
+            status: percentCritical > 10 ? 'critical' : 'good',
+            description: 'Equipment in critical vibration state'
+        }
+    ];
 
     const keyKPICards = [
         {
@@ -182,7 +209,7 @@ export function EnhancedKPIDashboard({ workOrders }: EnhancedKPIDashboardProps) 
         return '#ef4444'; // Red
     };
 
-    // Combine key KPI cards and other KPIs into a single array for a unified carousel
+    // Combine key KPI cards, other KPIs, and vibration KPIs
     const allKPICards = [
         ...keyKPICards.map(card => ({ ...card, type: 'key' })),
         ...kpis.map((kpi, index) => ({
@@ -205,8 +232,17 @@ export function EnhancedKPIDashboard({ workOrders }: EnhancedKPIDashboardProps) 
                     <span>-</span>,
             trend: `${Math.abs(kpi.trend).toFixed(1)}%`,
             trendColor: kpi.trend > 0 ? 'text-green-500' : kpi.trend < 0 ? 'text-red-500' : 'text-gray-500',
-            type: 'additional'
-        }))
+            type: 'kpi',
+        })),
+        ...vibrationKPIs.map((kpi) => ({
+            icon: <AlertTriangle className="h-4 w-4 text-red-500 animate-pulse" />,
+            status: kpi.status,
+            statusColor: getStatusColor(kpi.status),
+            value: `${kpi.value.toFixed(1)}${kpi.unit}`,
+            label: kpi.name,
+            progress: kpi.value,
+            type: 'vibration',
+        })),
     ];
 
     // Use CinematicKPICarousel for smooth sliding effect

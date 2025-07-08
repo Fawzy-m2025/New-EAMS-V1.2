@@ -1,4 +1,3 @@
-
 import { AppLayout } from "@/components/layout/AppLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Button } from "@/components/ui/button";
@@ -9,11 +8,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { TrendingDown, Search, Filter, Download, Upload, Calculator, DollarSign, Calendar, BarChart3, FileText, AlertTriangle, Settings } from "lucide-react";
 import { Equipment, EquipmentType } from "@/types/eams";
 import { DepreciationChart } from "@/components/assets/DepreciationChart";
 import { DepreciationScheduleTable } from "@/components/assets/DepreciationScheduleTable";
+import { allHierarchicalEquipment, equipmentSummary } from "@/data/hierarchicalAssetData";
 
 interface DepreciationData {
   equipmentId: string;
@@ -47,85 +47,170 @@ interface DepreciationData {
   }[];
 }
 
-// Sample depreciation data
-const sampleDepreciationData: DepreciationData[] = [
-  {
-    equipmentId: "EQ-001",
-    equipment: {
-      id: "EQ-001",
-      name: "Centrifugal Pump A1",
-      type: "mechanical",
-      category: "pump",
-      manufacturer: "Grundfos",
-      model: "CR 10-2",
-      serialNumber: "GF2024001",
-      assetTag: "PMP-001",
-      location: {
-        pumpStation: "Main Station",
-        building: "Pump House A",
-        floor: "Ground Floor",
-        room: "Pump Room 1"
-      },
-      specifications: {},
-      status: "operational",
-      condition: "good",
-      installationDate: "2023-01-15",
-      operatingHours: 8760,
-      conditionMonitoring: {
-        lastUpdated: "2024-12-15",
-        overallCondition: "good",
-        alerts: []
-      },
-      failureHistory: [],
-      maintenanceHistory: [],
-      createdAt: "2023-01-15",
-      updatedAt: "2024-12-15"
-    },
-    method: "straight-line",
-    originalValue: 25000,
-    salvageValue: 2500,
-    usefulLife: 15,
-    currentAge: 1.9,
-    annualDepreciation: 1500,
-    accumulatedDepreciation: 2850,
-    bookValue: 22150,
-    taxValue: 21800,
-    depreciationRate: 6.67,
-    schedule: Array.from({ length: 15 }, (_, i) => ({
-      year: i + 1,
-      beginningBookValue: 25000 - (i * 1500),
-      depreciationExpense: 1500,
-      accumulatedDepreciation: (i + 1) * 1500,
-      endingBookValue: 25000 - ((i + 1) * 1500),
-      taxDepreciation: 1600,
-      variance: 100
-    })),
-    chartData: Array.from({ length: 15 }, (_, i) => ({
-      year: i + 1,
-      bookValue: 25000 - ((i + 1) * 1500),
-      taxValue: 25000 - ((i + 1) * 1600),
-      depreciationExpense: 1500,
-      accumulatedDepreciation: (i + 1) * 1500,
-      marketValue: 25000 - ((i + 1) * 1400)
-    }))
-  }
-];
+// Generate realistic depreciation data based on equipment type and specifications
+const generateDepreciationData = (equipment: Equipment[]): DepreciationData[] => {
+  return equipment.map((asset) => {
+    // Determine asset values based on category and specifications
+    let originalValue = 10000; // Base value
+    let usefulLife = 10; // Base useful life
+    let method: "straight-line" | "declining-balance" | "sum-of-years" | "units-of-production" = "straight-line";
+
+    // Category-specific valuations
+    switch (asset.category) {
+      case 'pump':
+        originalValue = asset.name.includes('Priming') ? 15000 : 35000;
+        usefulLife = 15;
+        method = "straight-line";
+        break;
+      case 'motor':
+        originalValue = 25000;
+        usefulLife = 20;
+        method = "straight-line";
+        break;
+      case 'valve':
+        originalValue = asset.specifications?.diameter ?
+          parseInt(asset.specifications.diameter.toString()) * 50 : 5000;
+        usefulLife = 25;
+        method = "straight-line";
+        break;
+      case 'strainer':
+        originalValue = 8000;
+        usefulLife = 15;
+        method = "straight-line";
+        break;
+      case 'sensor':
+        originalValue = 12000;
+        usefulLife = 10;
+        method = "declining-balance";
+        break;
+      case 'actuator':
+        originalValue = 18000;
+        usefulLife = 15;
+        method = "straight-line";
+        break;
+      case 'tank':
+        originalValue = asset.specifications?.capacity ?
+          (asset.specifications.capacity as number) * 1000 : 45000;
+        usefulLife = 30;
+        method = "straight-line";
+        break;
+      case 'compressor':
+        originalValue = 55000;
+        usefulLife = 20;
+        method = "straight-line";
+        break;
+      default:
+        originalValue = 15000;
+        usefulLife = 15;
+    }
+
+    // Manufacturer adjustments
+    const manufacturerMultipliers: { [key: string]: number } = {
+      'HMS': 1.2,
+      'SAER': 1.1,
+      'ELDIN': 1.0,
+      'ABB': 1.3,
+      'ROBUSCHI/Italy': 1.4,
+      'McWANE': 1.1,
+      'TVN': 1.0,
+      'AMA': 0.9,
+      'El Haggar Misr': 0.8,
+      'HC': 1.0,
+      'EEC': 1.1
+    };
+
+    const multiplier = manufacturerMultipliers[asset.manufacturer] || 1.0;
+    originalValue *= multiplier;
+
+    const salvageValue = originalValue * 0.1; // 10% salvage value
+    const installationDate = new Date(asset.installationDate || '2020-01-15');
+    const currentAge = (Date.now() - installationDate.getTime()) / (1000 * 60 * 60 * 24 * 365);
+
+    const annualDepreciation = (originalValue - salvageValue) / usefulLife;
+    const accumulatedDepreciation = Math.min(annualDepreciation * currentAge, originalValue - salvageValue);
+    const bookValue = originalValue - accumulatedDepreciation;
+    const taxValue = bookValue * 0.95; // Slight difference for tax purposes
+    const depreciationRate = (annualDepreciation / originalValue) * 100;
+
+    // Generate schedule
+    const schedule = Array.from({ length: usefulLife }, (_, i) => {
+      const year = i + 1;
+      const yearlyDepreciation = method === "declining-balance" && year > 1 ?
+        (originalValue - (i * annualDepreciation)) * 0.2 : annualDepreciation;
+      const accumulated = Math.min((i + 1) * annualDepreciation, originalValue - salvageValue);
+      const endingBookValue = Math.max(originalValue - accumulated, salvageValue);
+
+      return {
+        year,
+        beginningBookValue: year === 1 ? originalValue : Math.max(originalValue - (i * annualDepreciation), salvageValue),
+        depreciationExpense: yearlyDepreciation,
+        accumulatedDepreciation: accumulated,
+        endingBookValue,
+        taxDepreciation: yearlyDepreciation * 1.05,
+        variance: yearlyDepreciation * 0.05
+      };
+    });
+
+    // Generate chart data
+    const chartData = Array.from({ length: usefulLife }, (_, i) => {
+      const year = i + 1;
+      const accumulated = Math.min((i + 1) * annualDepreciation, originalValue - salvageValue);
+      const bookValue = Math.max(originalValue - accumulated, salvageValue);
+      const marketValue = bookValue * (0.9 + Math.random() * 0.2); // Market fluctuation
+
+      return {
+        year,
+        bookValue,
+        taxValue: bookValue * 0.95,
+        depreciationExpense: annualDepreciation,
+        accumulatedDepreciation: accumulated,
+        marketValue
+      };
+    });
+
+    return {
+      equipmentId: asset.id,
+      equipment: asset,
+      method,
+      originalValue,
+      salvageValue,
+      usefulLife,
+      currentAge,
+      annualDepreciation,
+      accumulatedDepreciation,
+      bookValue,
+      taxValue,
+      depreciationRate,
+      schedule,
+      chartData
+    };
+  });
+};
 
 const AssetDepreciationPage = () => {
-  const [depreciationData, setDepreciationData] = useState<DepreciationData[]>(sampleDepreciationData);
+  const [depreciationData, setDepreciationData] = useState<DepreciationData[]>(
+    generateDepreciationData(allHierarchicalEquipment)
+  );
   const [searchTerm, setSearchTerm] = useState("");
   const [methodFilter, setMethodFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<EquipmentType | "all">("all");
-  const [selectedAsset, setSelectedAsset] = useState<DepreciationData | null>(sampleDepreciationData[0]);
+  const [selectedAsset, setSelectedAsset] = useState<DepreciationData | null>(null);
   const [scheduleViewMode, setScheduleViewMode] = useState<'annual' | 'quarterly' | 'monthly'>('annual');
+
+  // Set initial selected asset
+  useEffect(() => {
+    if (depreciationData.length > 0 && !selectedAsset) {
+      setSelectedAsset(depreciationData[0]);
+    }
+  }, [depreciationData, selectedAsset]);
 
   const filteredData = useMemo(() => {
     return depreciationData.filter(item => {
       const matchesSearch = item.equipment.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          item.equipment.manufacturer.toLowerCase().includes(searchTerm.toLowerCase());
+        item.equipment.manufacturer.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesMethod = methodFilter === "all" || item.method === methodFilter;
       const matchesType = typeFilter === "all" || item.equipment.type === typeFilter;
-      
+
       return matchesSearch && matchesMethod && matchesType;
     });
   }, [depreciationData, searchTerm, methodFilter, typeFilter]);
@@ -176,42 +261,60 @@ const AssetDepreciationPage = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-          <StatCard 
+          <StatCard
             title="Original Value"
             value={`$${stats.totalOriginalValue.toLocaleString()}`}
             icon={<DollarSign className="text-green-600 h-4 w-4" />}
             description="Total acquisition cost"
           />
-          <StatCard 
+          <StatCard
             title="Book Value"
             value={`$${stats.totalBookValue.toLocaleString()}`}
             icon={<BarChart3 className="text-blue-600 h-4 w-4" />}
             description="Current GAAP value"
           />
-          <StatCard 
+          <StatCard
             title="Tax Value"
             value={`$${stats.totalTaxValue.toLocaleString()}`}
             icon={<FileText className="text-purple-600 h-4 w-4" />}
             description="Current tax basis"
           />
-          <StatCard 
+          <StatCard
             title="Total Depreciation"
             value={`$${stats.totalDepreciation.toLocaleString()}`}
             icon={<TrendingDown className="text-red-600 h-4 w-4" />}
             description="Accumulated depreciation"
           />
-          <StatCard 
+          <StatCard
             title="Book vs Tax Variance"
             value={`$${stats.totalVariance.toLocaleString()}`}
             icon={<AlertTriangle className="text-orange-600 h-4 w-4" />}
             description="Variance amount"
           />
-          <StatCard 
+          <StatCard
             title="Avg Depreciation Rate"
             value={`${stats.avgDepreciationRate.toFixed(1)}%`}
             icon={<Calendar className="text-purple-600 h-4 w-4" />}
             description="Annual depreciation"
           />
+        </div>
+
+        {/* Equipment Category Depreciation Overview */}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+          {Object.entries(equipmentSummary.byCategory).map(([category, count]) => {
+            const categoryData = depreciationData.filter(item => item.equipment.category === category);
+            const totalValue = categoryData.reduce((sum, item) => sum + item.bookValue, 0);
+
+            return (
+              <StatCard
+                key={category}
+                title={category.charAt(0).toUpperCase() + category.slice(1)}
+                value={count.toString()}
+                icon={<Calculator className="text-primary h-4 w-4" />}
+                description={`$${Math.round(totalValue / 1000)}K value`}
+              />
+            );
+          })}
         </div>
 
         <Tabs defaultValue="overview" className="w-full">
@@ -254,7 +357,7 @@ const AssetDepreciationPage = () => {
                         <SelectItem value="units-of-production">Units of Production</SelectItem>
                       </SelectContent>
                     </Select>
-                    
+
                     <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as EquipmentType | "all")}>
                       <SelectTrigger className="w-48">
                         <SelectValue placeholder="Type" />
@@ -290,8 +393,8 @@ const AssetDepreciationPage = () => {
                     </TableHeader>
                     <TableBody>
                       {filteredData.map((item) => (
-                        <TableRow 
-                          key={item.equipmentId} 
+                        <TableRow
+                          key={item.equipmentId}
                           className="hover:bg-muted/50 cursor-pointer"
                           onClick={() => setSelectedAsset(item)}
                         >
@@ -327,8 +430,8 @@ const AssetDepreciationPage = () => {
                           </TableCell>
                           <TableCell>
                             <div className="w-24">
-                              <Progress 
-                                value={(item.currentAge / item.usefulLife) * 100} 
+                              <Progress
+                                value={(item.currentAge / item.usefulLife) * 100}
                                 className="h-2"
                               />
                               <div className="text-xs text-muted-foreground mt-1">
@@ -357,7 +460,7 @@ const AssetDepreciationPage = () => {
 
           <TabsContent value="analytics" className="space-y-6">
             {selectedAsset && (
-              <DepreciationChart 
+              <DepreciationChart
                 data={selectedAsset.chartData}
                 title={selectedAsset.equipment.name}
                 method={selectedAsset.method}
@@ -369,7 +472,7 @@ const AssetDepreciationPage = () => {
 
           <TabsContent value="schedule" className="space-y-6">
             {selectedAsset && (
-              <DepreciationScheduleTable 
+              <DepreciationScheduleTable
                 schedule={selectedAsset.schedule}
                 assetName={selectedAsset.equipment.name}
                 method={selectedAsset.method}

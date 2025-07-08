@@ -9,6 +9,8 @@ import {
   Target, Zap, ArrowRight, ChevronRight
 } from 'lucide-react';
 import type { WorkOrder } from '@/types/eams';
+import { useAssetContext } from '@/contexts/AssetContext';
+import { vibrationHistory } from '@/lib/enhancedMLPipelineData';
 
 interface EnhancedDashboardProps {
   workOrders: WorkOrder[];

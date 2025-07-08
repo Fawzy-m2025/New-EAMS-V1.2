@@ -15,7 +15,8 @@ import { KPIGaugeChart } from "@/components/assets/KPIGaugeChart";
 import { InteractiveTimeSeriesChart } from "@/components/assets/InteractiveTimeSeriesChart";
 import { ROIAnalysisChart } from "@/components/assets/ROIAnalysisChart";
 import { EnhancedChart } from "@/components/charts/EnhancedChart";
-import { industrialAssets } from "@/data/enhancedAssetData";
+import { allHierarchicalEquipment, equipmentSummary, zoneA } from "@/data/hierarchicalAssetData";
+import { calculateEquipmentKPIs, calculateHierarchyKPIs, calculateZoneKPIs } from "@/utils/kpiCalculations";
 
 interface PerformanceMetrics {
   equipmentId: string;
@@ -35,25 +36,39 @@ interface PerformanceMetrics {
   healthScore: number;
 }
 
-// Generate realistic performance data
+// Generate realistic performance data using KPI calculations
 const generatePerformanceData = (equipment: Equipment[]): PerformanceMetrics[] => {
-  return equipment.slice(0, 20).map((asset, index) => ({
-    equipmentId: asset.id,
-    equipment: asset,
-    availability: 85 + Math.random() * 15,
-    reliability: 80 + Math.random() * 20,
-    efficiency: 75 + Math.random() * 20,
-    oee: 60 + Math.random() * 30,
-    mtbf: 1500 + Math.random() * 2000,
-    mttr: 2 + Math.random() * 8,
-    utilizationRate: 70 + Math.random() * 25,
-    energyEfficiency: 80 + Math.random() * 15,
-    maintenanceCost: 1000 + Math.random() * 5000,
-    downtimeHours: Math.random() * 50,
-    lastPerformanceUpdate: "2024-12-15",
-    lifecycleStage: (['acquisition', 'utilization', 'maintenance', 'disposal'] as const)[index % 4],
-    healthScore: 60 + Math.random() * 40
-  }));
+  return equipment.map((asset) => {
+    const kpis = calculateEquipmentKPIs(asset);
+
+    // Determine lifecycle stage based on installation date and condition
+    let lifecycleStage: 'acquisition' | 'utilization' | 'maintenance' | 'disposal' = 'utilization';
+    const installationDate = new Date(asset.installationDate || '2020-01-15');
+    const yearsOld = (Date.now() - installationDate.getTime()) / (1000 * 60 * 60 * 24 * 365);
+
+    if (yearsOld < 1) lifecycleStage = 'acquisition';
+    else if (asset.condition === 'poor' || asset.condition === 'critical') lifecycleStage = 'maintenance';
+    else if (yearsOld > 15) lifecycleStage = 'disposal';
+    else lifecycleStage = 'utilization';
+
+    return {
+      equipmentId: asset.id,
+      equipment: asset,
+      availability: kpis.availability || 85,
+      reliability: kpis.reliability || 80,
+      efficiency: kpis.efficiency || 75,
+      oee: kpis.oee || 70,
+      mtbf: kpis.mtbf || 2000,
+      mttr: kpis.mttr || 4,
+      utilizationRate: kpis.utilizationRate || 80,
+      energyEfficiency: kpis.energyEfficiency || 85,
+      maintenanceCost: kpis.maintenanceCost || 2000,
+      downtimeHours: kpis.downtimeHours || 10,
+      lastPerformanceUpdate: "2024-12-15",
+      lifecycleStage,
+      healthScore: kpis.healthScore || 75
+    };
+  });
 };
 
 // Generate time series data
@@ -93,7 +108,7 @@ const generateROIData = () => {
 
 const AssetPerformancePage = () => {
   const [performanceData, setPerformanceData] = useState<PerformanceMetrics[]>(
-    generatePerformanceData(industrialAssets)
+    generatePerformanceData(allHierarchicalEquipment)
   );
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<EquipmentStatus | "all">("all");
@@ -114,31 +129,78 @@ const AssetPerformancePage = () => {
   }, [performanceData, searchTerm, statusFilter, conditionFilter]);
 
   const stats = useMemo(() => {
-    const avgOEE = performanceData.reduce((sum, item) => sum + item.oee, 0) / performanceData.length;
-    const avgAvailability = performanceData.reduce((sum, item) => sum + item.availability, 0) / performanceData.length;
-    const avgMTBF = performanceData.reduce((sum, item) => sum + item.mtbf, 0) / performanceData.length;
-    const totalMaintenanceCost = performanceData.reduce((sum, item) => sum + item.maintenanceCost, 0);
-    const avgHealthScore = performanceData.reduce((sum, item) => sum + item.healthScore, 0) / performanceData.length;
+    const validData = performanceData.filter(item => item && typeof item.oee === 'number');
+    const dataLength = Math.max(validData.length, 1); // Prevent division by zero
+
+    const avgOEE = validData.reduce((sum, item) => sum + (item.oee || 0), 0) / dataLength;
+    const avgAvailability = validData.reduce((sum, item) => sum + (item.availability || 0), 0) / dataLength;
+    const avgMTBF = validData.reduce((sum, item) => sum + (item.mtbf || 0), 0) / dataLength;
+    const totalMaintenanceCost = validData.reduce((sum, item) => sum + (item.maintenanceCost || 0), 0);
+    const avgHealthScore = validData.reduce((sum, item) => sum + (item.healthScore || 0), 0) / dataLength;
 
     return { avgOEE, avgAvailability, avgMTBF, totalMaintenanceCost, avgHealthScore };
   }, [performanceData]);
 
   const kpiData = useMemo(() => {
+    // Calculate real utilization by zone using hierarchical data
+    const zoneKPIs = calculateZoneKPIs(zoneA);
     const utilizationByZone = [
-      { name: 'Zone A', utilization: 85 },
-      { name: 'Zone B', utilization: 78 },
-      { name: 'Zone C', utilization: 92 },
-      { name: 'Zone D', utilization: 76 }
+      { name: 'Zone A', utilization: zoneKPIs.avgUtilizationRate }
     ];
 
-    const maintenanceCostTrend = [
-      { name: 'Q1', preventive: 45000, corrective: 32000, emergency: 18000 },
-      { name: 'Q2', preventive: 48000, corrective: 28000, emergency: 15000 },
-      { name: 'Q3', preventive: 52000, corrective: 25000, emergency: 12000 },
-      { name: 'Q4', preventive: 55000, corrective: 22000, emergency: 10000 }
-    ];
+    // Calculate maintenance cost trends by station
+    const stationCosts = zoneA.stations.map(station => {
+      const stationEquipment = [
+        ...station.lines.flatMap(line => line.equipment),
+        ...station.systems.flatMap(system => system.equipment)
+      ];
+      const totalCost = stationEquipment.reduce((sum, eq) => {
+        const kpis = calculateEquipmentKPIs(eq);
+        return sum + kpis.maintenanceCost;
+      }, 0);
 
-    return { utilizationByZone, maintenanceCostTrend };
+      return {
+        name: station.name.replace('Pump Station ', 'Station '),
+        preventive: totalCost * 0.6,
+        corrective: totalCost * 0.3,
+        emergency: totalCost * 0.1
+      };
+    }).slice(0, 4); // Show first 4 stations
+
+    // Equipment category performance breakdown
+    const categoryPerformance = Object.entries(equipmentSummary.byCategory).map(([category, count]) => {
+      const categoryEquipment = allHierarchicalEquipment.filter(eq => eq.category === category);
+      const avgKPIs = categoryEquipment.length > 0 ?
+        categoryEquipment.reduce((acc, eq) => {
+          const kpis = calculateEquipmentKPIs(eq);
+          return {
+            availability: acc.availability + (kpis.availability || 0),
+            efficiency: acc.efficiency + (kpis.efficiency || 0),
+            reliability: acc.reliability + (kpis.reliability || 0)
+          };
+        }, { availability: 0, efficiency: 0, reliability: 0 }) :
+        { availability: 0, efficiency: 0, reliability: 0 };
+
+      if (categoryEquipment.length > 0) {
+        avgKPIs.availability = (avgKPIs.availability / categoryEquipment.length) || 0;
+        avgKPIs.efficiency = (avgKPIs.efficiency / categoryEquipment.length) || 0;
+        avgKPIs.reliability = (avgKPIs.reliability / categoryEquipment.length) || 0;
+      }
+
+      return {
+        category: category.charAt(0).toUpperCase() + category.slice(1),
+        count,
+        availability: avgKPIs.availability,
+        efficiency: avgKPIs.efficiency,
+        reliability: avgKPIs.reliability
+      };
+    });
+
+    return {
+      utilizationByZone,
+      maintenanceCostTrend: stationCosts,
+      categoryPerformance
+    };
   }, []);
 
   const getPerformanceColor = (value: number, thresholds: { good: number; fair: number }) => {
@@ -207,6 +269,19 @@ const AssetPerformancePage = () => {
             trend={{ value: 3.8, isPositive: true }}
             description="AI-driven equipment health"
           />
+        </div>
+
+        {/* Equipment Category Performance Overview */}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+          {kpiData.categoryPerformance.map((category) => (
+            <StatCard
+              key={category.category}
+              title={category.category}
+              value={category.count.toString()}
+              icon={<Activity className="text-primary h-4 w-4" />}
+              description={`${(category.availability || 0).toFixed(0)}% availability`}
+            />
+          ))}
         </div>
 
         <Tabs defaultValue="analytics" className="space-y-6">
@@ -591,15 +666,15 @@ const AssetPerformancePage = () => {
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              <span className={`font-medium ${getPerformanceColor(item.oee, { good: 80, fair: 60 })}`}>
-                                {item.oee.toFixed(1)}%
+                              <span className={`font-medium ${getPerformanceColor(item.oee || 0, { good: 80, fair: 60 })}`}>
+                                {(item.oee || 0).toFixed(1)}%
                               </span>
-                              <Progress value={item.oee} className="w-16 h-2" />
+                              <Progress value={item.oee || 0} className="w-16 h-2" />
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge className={getPerformanceBadge(item.availability, { good: 95, fair: 85 })}>
-                              {item.availability.toFixed(1)}%
+                            <Badge className={getPerformanceBadge(item.availability || 0, { good: 95, fair: 85 })}>
+                              {(item.availability || 0).toFixed(1)}%
                             </Badge>
                           </TableCell>
                           <TableCell>
@@ -607,22 +682,22 @@ const AssetPerformancePage = () => {
                               <div
                                 className="w-3 h-3 rounded-full"
                                 style={{
-                                  backgroundColor: item.healthScore >= 80 ? '#22c55e' :
-                                    item.healthScore >= 60 ? '#eab308' : '#ef4444'
+                                  backgroundColor: (item.healthScore || 0) >= 80 ? '#22c55e' :
+                                    (item.healthScore || 0) >= 60 ? '#eab308' : '#ef4444'
                                 }}
                               />
-                              <span className="font-medium">{item.healthScore.toFixed(0)}/100</span>
+                              <span className="font-medium">{(item.healthScore || 0).toFixed(0)}/100</span>
                             </div>
                           </TableCell>
                           <TableCell className="text-sm">
-                            <div>MTBF: {Math.round(item.mtbf)}h</div>
-                            <div className="text-muted-foreground">MTTR: {item.mttr.toFixed(1)}h</div>
+                            <div>MTBF: {Math.round(item.mtbf || 0)}h</div>
+                            <div className="text-muted-foreground">MTTR: {(item.mttr || 0).toFixed(1)}h</div>
                           </TableCell>
                           <TableCell>
                             <div className="w-20">
-                              <Progress value={item.utilizationRate} className="h-2" />
+                              <Progress value={item.utilizationRate || 0} className="h-2" />
                               <div className="text-xs text-muted-foreground mt-1">
-                                {item.utilizationRate.toFixed(1)}%
+                                {(item.utilizationRate || 0).toFixed(1)}%
                               </div>
                             </div>
                           </TableCell>

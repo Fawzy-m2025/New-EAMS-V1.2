@@ -1,4 +1,3 @@
-
 import { AppLayout } from "@/components/layout/AppLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useState, useMemo, useEffect } from "react";
-import { MapPin, Search, Filter, Download, Upload, Eye, Edit, AlertTriangle, Wifi, WifiOff, Battery, Thermometer, QrCode, Clock, Users, TrendingUp, Activity, Navigation } from "lucide-react";
+import { MapPin, Search, Filter, Download, Upload, Eye, Edit, AlertTriangle, Wifi, WifiOff, Battery, Thermometer, QrCode, Clock, Users, TrendingUp, Activity, Navigation, Settings } from "lucide-react";
 import { Equipment, EquipmentStatus, ConditionStatus } from "@/types/eams";
 import { FloatingFilterPanel } from "@/components/assets/FloatingFilterPanel";
 import { InteractiveFacilityMap } from "@/components/assets/InteractiveFacilityMap";
@@ -21,112 +20,13 @@ import { QRCodeGenerator } from "@/components/assets/QRCodeGenerator";
 import { RealTimeMonitoring } from "@/components/assets/RealTimeMonitoring";
 import { AuditTrailViewer } from "@/components/assets/AuditTrailViewer";
 import type { EAMSFilter } from "@/types/eams";
+import { allHierarchicalEquipment, equipmentSummary } from "@/data/hierarchicalAssetData";
 
-// Enhanced sample data with real-time tracking capabilities
-const sampleEquipmentData: Equipment[] = [
-  {
-    id: "EQ-001",
-    name: "Centrifugal Pump A1",
-    type: "mechanical",
-    category: "pump",
-    manufacturer: "Grundfos",
-    model: "CR 10-2",
-    serialNumber: "GF2024001",
-    assetTag: "PMP-001",
-    location: {
-      pumpStation: "Main Station",
-      building: "Pump House A",
-      floor: "Ground Floor",
-      room: "Pump Room 1",
-      coordinates: { latitude: 40.7128, longitude: -74.0060 }
-    },
-    specifications: {
-      ratedPower: 5.5,
-      ratedVoltage: 415,
-      flowRate: 50,
-      pressure: 8.5,
-      speed: 2900
-    },
-    status: "operational",
-    condition: "good",
-    installationDate: "2023-01-15",
-    lastMaintenanceDate: "2024-11-01",
-    nextMaintenanceDate: "2025-02-01",
-    operatingHours: 8760,
-    conditionMonitoring: {
-      vibration: {
-        rmsVelocity: 2.1,
-        peakVelocity: 8.4,
-        displacement: 12,
-        frequency: [50, 100, 150],
-        spectrum: [2.1, 1.8, 1.2],
-        iso10816Zone: "A",
-        measurementDate: "2024-12-15",
-        measuredBy: "John Smith"
-      },
-      thermography: {
-        maxTemperature: 65,
-        avgTemperature: 58,
-        hotSpots: [],
-        baseline: 55,
-        deltaT: 3,
-        measurementDate: "2024-12-15"
-      },
-      lastUpdated: "2024-12-15",
-      overallCondition: "good",
-      alerts: []
-    },
-    failureHistory: [],
-    maintenanceHistory: [],
-    createdAt: "2023-01-15",
-    updatedAt: "2024-12-15"
-  },
-  {
-    id: "EQ-002",
-    name: "Motor Control Panel B2",
-    type: "electrical",
-    category: "panel",
-    manufacturer: "Schneider Electric",
-    model: "PrismaSeT G",
-    serialNumber: "SE2024002",
-    assetTag: "MCP-002",
-    location: {
-      pumpStation: "Main Station",
-      building: "Control Room",
-      floor: "Ground Floor",
-      room: "Electrical Room",
-      coordinates: { latitude: 40.7129, longitude: -74.0061 }
-    },
-    specifications: {
-      ratedVoltage: 415,
-      ratedCurrent: 63
-    },
-    status: "operational",
-    condition: "excellent",
-    installationDate: "2023-03-20",
-    operatingHours: 8760,
-    conditionMonitoring: {
-      thermography: {
-        maxTemperature: 45,
-        avgTemperature: 38,
-        hotSpots: [],
-        baseline: 35,
-        deltaT: 3,
-        measurementDate: "2024-12-15"
-      },
-      lastUpdated: "2024-12-15",
-      overallCondition: "excellent",
-      alerts: []
-    },
-    failureHistory: [],
-    maintenanceHistory: [],
-    createdAt: "2023-03-20",
-    updatedAt: "2024-12-15"
-  }
-];
+// Real hierarchical equipment data with tracking capabilities
+// Using the comprehensive equipment data from hierarchicalAssetData.ts
 
 const AssetTrackingPage = () => {
-  const [equipment, setEquipment] = useState<Equipment[]>(sampleEquipmentData);
+  const [equipment, setEquipment] = useState<Equipment[]>(allHierarchicalEquipment);
   const [filters, setFilters] = useState<EAMSFilter>({
     search: '',
     equipmentTypes: [],
@@ -156,48 +56,68 @@ const AssetTrackingPage = () => {
 
   const filteredEquipment = useMemo(() => {
     return equipment.filter(item => {
-      const matchesSearch = filters.search === '' || 
+      const matchesSearch = filters.search === '' ||
         item.name.toLowerCase().includes(filters.search.toLowerCase()) ||
         item.manufacturer.toLowerCase().includes(filters.search.toLowerCase()) ||
         item.model.toLowerCase().includes(filters.search.toLowerCase()) ||
         item.assetTag?.toLowerCase().includes(filters.search.toLowerCase());
-        
-      const matchesTypes = filters.equipmentTypes.length === 0 || 
+
+      const matchesTypes = filters.equipmentTypes.length === 0 ||
         filters.equipmentTypes.includes(item.type);
-        
-      const matchesCategories = filters.categories.length === 0 || 
+
+      const matchesCategories = filters.categories.length === 0 ||
         filters.categories.includes(item.category);
-        
-      const matchesStatus = filters.status.length === 0 || 
+
+      const matchesStatus = filters.status.length === 0 ||
         filters.status.includes(item.status);
-        
-      const matchesConditions = filters.conditions.length === 0 || 
+
+      const matchesConditions = filters.conditions.length === 0 ||
         filters.conditions.includes(item.condition);
-        
-      const matchesLocations = filters.locations.length === 0 || 
-        filters.locations.some(loc => 
+
+      const matchesLocations = filters.locations.length === 0 ||
+        filters.locations.some(loc =>
           item.location.pumpStation?.includes(loc) ||
           item.location.building?.includes(loc)
         );
-        
-      const matchesManufacturers = filters.manufacturers.length === 0 || 
+
+      const matchesManufacturers = filters.manufacturers.length === 0 ||
         filters.manufacturers.includes(item.manufacturer);
-        
-      return matchesSearch && matchesTypes && matchesCategories && 
-             matchesStatus && matchesConditions && matchesLocations && 
-             matchesManufacturers;
+
+      return matchesSearch && matchesTypes && matchesCategories &&
+        matchesStatus && matchesConditions && matchesLocations &&
+        matchesManufacturers;
     });
   }, [equipment, filters]);
 
   const stats = useMemo(() => {
     const total = equipment.length;
     const operational = equipment.filter(e => e.status === "operational").length;
-    const criticalAlerts = equipment.filter(e => 
-      e.conditionMonitoring.alerts.some(alert => alert.severity === "critical")
+    const criticalAlerts = equipment.filter(e =>
+      e.conditionMonitoring?.alerts?.some(alert => alert.severity === "critical")
     ).length;
-    const avgUtilization = equipment.reduce((sum, e) => sum + (e.operatingHours! / 8760), 0) / total * 100;
+    const avgUtilization = equipment.reduce((sum, e) => sum + (e.operatingHours || 0) / 8760, 0) / total * 100;
 
-    return { total, operational, criticalAlerts, avgUtilization };
+    // Enhanced stats with equipment category breakdown
+    const categoryBreakdown = {
+      pumps: equipment.filter(e => e.category === 'pump').length,
+      motors: equipment.filter(e => e.category === 'motor').length,
+      valves: equipment.filter(e => e.category === 'valve').length,
+      strainers: equipment.filter(e => e.category === 'strainer').length,
+      sensors: equipment.filter(e => e.category === 'sensor').length,
+      actuators: equipment.filter(e => e.category === 'actuator').length,
+      tanks: equipment.filter(e => e.category === 'tank').length,
+      compressors: equipment.filter(e => e.category === 'compressor').length
+    };
+
+    return {
+      total,
+      operational,
+      criticalAlerts,
+      avgUtilization,
+      categoryBreakdown,
+      // Use equipment summary data for verification
+      summaryData: equipmentSummary
+    };
   }, [equipment]);
 
   const getStatusColor = (status: EquipmentStatus) => {
@@ -248,30 +168,82 @@ const AssetTrackingPage = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard 
+          <StatCard
             title="Total Assets"
             value={stats.total.toString()}
             icon={<MapPin className="text-primary h-4 w-4" />}
-            description="Tracked equipment"
+            description={`${stats.categoryBreakdown.pumps} pumps, ${stats.categoryBreakdown.motors} motors, ${stats.categoryBreakdown.valves} valves`}
           />
-          <StatCard 
+          <StatCard
             title="Operational"
             value={stats.operational.toString()}
             icon={<Wifi className="text-green-600 h-4 w-4" />}
-            trend={{ value: 95, isPositive: true }}
+            trend={{ value: Math.round((stats.operational / stats.total) * 100), isPositive: true }}
             description="Currently active"
           />
-          <StatCard 
+          <StatCard
             title="Critical Alerts"
             value={stats.criticalAlerts.toString()}
             icon={<AlertTriangle className="text-red-600 h-4 w-4" />}
             description="Require attention"
           />
-          <StatCard 
+          <StatCard
             title="Avg Utilization"
             value={`${Math.round(stats.avgUtilization)}%`}
             icon={<Battery className="text-blue-600 h-4 w-4" />}
             description="Equipment usage"
+          />
+        </div>
+
+        {/* Equipment Category Breakdown */}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+          <StatCard
+            title="Pumps"
+            value={stats.categoryBreakdown.pumps.toString()}
+            icon={<Activity className="text-blue-600 h-4 w-4" />}
+            description="Main & Priming"
+          />
+          <StatCard
+            title="Motors"
+            value={stats.categoryBreakdown.motors.toString()}
+            icon={<Thermometer className="text-yellow-600 h-4 w-4" />}
+            description="Drive units"
+          />
+          <StatCard
+            title="Valves"
+            value={stats.categoryBreakdown.valves.toString()}
+            icon={<Settings className="text-purple-600 h-4 w-4" />}
+            description="Control valves"
+          />
+          <StatCard
+            title="Strainers"
+            value={stats.categoryBreakdown.strainers.toString()}
+            icon={<Filter className="text-green-600 h-4 w-4" />}
+            description="Filtration"
+          />
+          <StatCard
+            title="Sensors"
+            value={stats.categoryBreakdown.sensors.toString()}
+            icon={<TrendingUp className="text-red-600 h-4 w-4" />}
+            description="Monitoring"
+          />
+          <StatCard
+            title="Actuators"
+            value={stats.categoryBreakdown.actuators.toString()}
+            icon={<Navigation className="text-indigo-600 h-4 w-4" />}
+            description="Control units"
+          />
+          <StatCard
+            title="Tanks"
+            value={stats.categoryBreakdown.tanks.toString()}
+            icon={<Users className="text-cyan-600 h-4 w-4" />}
+            description="Water hammer"
+          />
+          <StatCard
+            title="Compressors"
+            value={stats.categoryBreakdown.compressors.toString()}
+            icon={<Activity className="text-orange-600 h-4 w-4" />}
+            description="Air systems"
           />
         </div>
 
@@ -336,8 +308,15 @@ const AssetTrackingPage = () => {
                             <div className="flex items-center gap-2">
                               <MapPin className="h-4 w-4 text-muted-foreground" />
                               <div>
-                                <div>{item.location.building}</div>
-                                <div className="text-muted-foreground">{item.location.room}</div>
+                                <div className="font-medium">
+                                  {item.location?.zone || 'Zone A'} → {item.location?.station || 'Unknown Station'}
+                                </div>
+                                <div className="text-muted-foreground">
+                                  {item.location?.line || item.location?.system || 'Station Equipment'}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {item.location?.building || 'Equipment Building'} • {item.location?.room || 'Equipment Room'}
+                                </div>
                               </div>
                             </div>
                           </TableCell>
@@ -353,8 +332,8 @@ const AssetTrackingPage = () => {
                           </TableCell>
                           <TableCell>
                             <div className="w-20">
-                              <Progress 
-                                value={(item.operatingHours! / 8760) * 100} 
+                              <Progress
+                                value={(item.operatingHours! / 8760) * 100}
                                 className="h-2"
                               />
                               <div className="text-xs text-muted-foreground mt-1">
@@ -367,8 +346,8 @@ const AssetTrackingPage = () => {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-1">
-                              <Button 
-                                variant="ghost" 
+                              <Button
+                                variant="ghost"
                                 size="sm"
                                 onClick={() => setSelectedAsset(item)}
                               >
@@ -411,7 +390,7 @@ const AssetTrackingPage = () => {
 
         {/* QR Code Generator Modal */}
         {selectedAsset && (
-          <QRCodeGenerator 
+          <QRCodeGenerator
             asset={selectedAsset}
             isOpen={!!selectedAsset}
             onClose={() => setSelectedAsset(null)}

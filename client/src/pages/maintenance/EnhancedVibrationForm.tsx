@@ -1897,6 +1897,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
         // Generate RUL prediction curve
         for (let i = 0; i <= rulPrediction.estimatedRUL; i += Math.ceil(rulPrediction.estimatedRUL / 20)) {
             const date = addDays(new Date(), i);
+            if (isNaN(date.getTime())) continue; // skip invalid dates
             const remainingLife = Math.max(0, rulPrediction.estimatedRUL - i);
 
             data.push({

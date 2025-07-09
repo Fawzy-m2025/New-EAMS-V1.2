@@ -114,25 +114,166 @@ interface FailureAnalysisCardProps {
     onToggleExpand?: () => void;
     isActive?: boolean;
     autoRotate?: boolean;
+    cardIndex?: number;
+    totalCards?: number;
 }
+
+interface FailureAnalysisCarouselProps {
+    analyses: FailureAnalysis[];
+    autoRotate?: boolean;
+}
+
+export const FailureAnalysisCarousel: React.FC<FailureAnalysisCarouselProps> = ({
+    analyses,
+    autoRotate = true
+}) => {
+    const [currentSlide, setCurrentSlide] = React.useState(0);
+    const [isAutoPlay, setIsAutoPlay] = React.useState(autoRotate);
+    const [expandedCards, setExpandedCards] = React.useState<Set<number>>(new Set());
+    const autoPlayRef = React.useRef<NodeJS.Timeout | null>(null);
+
+    // Auto-rotation effect (5.5s per card) matching CinematicKPICarousel
+    React.useEffect(() => {
+        if (!isAutoPlay || analyses.length <= 1) return;
+        autoPlayRef.current = setInterval(() => {
+            setCurrentSlide(prev => (prev + 1) % analyses.length);
+        }, 5500);
+        return () => autoPlayRef.current && clearInterval(autoPlayRef.current);
+    }, [isAutoPlay, analyses.length]);
+
+    const handleToggleExpand = (index: number) => {
+        setExpandedCards(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(index)) {
+                newSet.delete(index);
+            } else {
+                newSet.add(index);
+            }
+            return newSet;
+        });
+    };
+
+    // Pause/resume on hover/touch
+    const handlePause = React.useCallback(() => setIsAutoPlay(false), []);
+    const handleResume = React.useCallback(() => setIsAutoPlay(true), []);
+
+    if (!analyses || analyses.length === 0) {
+        return (
+            <div className="text-center p-8 text-muted-foreground">
+                No failure analysis data available
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-4">
+            {/* Control Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h3 className="text-xl font-bold">Failure Mode Analysis</h3>
+                    <p className="text-sm text-muted-foreground">AI-powered equipment diagnostics</p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setIsAutoPlay(!isAutoPlay)}
+                        className="px-3 py-1 text-xs font-medium bg-primary/10 border border-primary/20 rounded-lg hover:bg-primary/20 transition-all duration-300"
+                    >
+                        {isAutoPlay ? (
+                            <>
+                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse inline-block mr-2" />
+                                Auto-Play
+                            </>
+                        ) : (
+                            <>
+                                <div className="w-2 h-2 bg-gray-400 rounded-full inline-block mr-2" />
+                                Manual
+                            </>
+                        )}
+                    </button>
+                    <Badge className="bg-white/20 text-primary">
+                        {currentSlide + 1} / {analyses.length}
+                    </Badge>
+                </div>
+            </div>
+
+            {/* Cards Container */}
+            <div 
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                onMouseEnter={handlePause}
+                onMouseLeave={handleResume}
+                onTouchStart={handlePause}
+                onTouchEnd={handleResume}
+            >
+                {analyses.map((analysis, index) => (
+                    <FailureAnalysisCard
+                        key={`${analysis.type}-${index}`}
+                        analysis={analysis}
+                        expanded={expandedCards.has(index)}
+                        onToggleExpand={() => handleToggleExpand(index)}
+                        isActive={index === currentSlide}
+                        autoRotate={isAutoPlay}
+                        cardIndex={index}
+                        totalCards={analyses.length}
+                    />
+                ))}
+            </div>
+
+            {/* Slide indicators */}
+            <div className="flex justify-center gap-2 mt-4" aria-label="Failure analysis slide indicators">
+                {analyses.map((_, index) => (
+                    <button
+                        key={index}
+                        onClick={() => setCurrentSlide(index)}
+                        className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                            index === currentSlide 
+                                ? 'bg-primary w-6' 
+                                : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                        }`}
+                        aria-label={`Go to slide ${index + 1}`}
+                        aria-current={index === currentSlide ? 'true' : 'false'}
+                    />
+                ))}
+            </div>
+        </div>
+    );
+};
 
 export const FailureAnalysisCard: React.FC<FailureAnalysisCardProps> = ({
     analysis,
     expanded = false,
     onToggleExpand,
     isActive = true,
-    autoRotate = true
+    autoRotate = true,
+    cardIndex = 0,
+    totalCards = 1
 }) => {
     const FailureIcon = FAILURE_ICONS[analysis.type] || Activity;
+    
+    // Auto-rotation state management
+    const [currentActiveCard, setCurrentActiveCard] = React.useState(0);
+    const [isAutoPlayActive, setIsAutoPlayActive] = React.useState(autoRotate);
+    const autoPlayRef = React.useRef<NodeJS.Timeout | null>(null);
     
     // Use the same glass card class as CinematicKPICarousel for consistency
     const glassCardClass = "bg-white/5 dark:bg-zinc-900/10 backdrop-blur-sm border border-primary/20 hover:border-primary/40 shadow-md hover:shadow-xl transition-all duration-300 ease-in-out";
     
+    // Auto-rotation effect (5.5s per card) matching CinematicKPICarousel
+    React.useEffect(() => {
+        if (!isAutoPlayActive || totalCards <= 1) return;
+        autoPlayRef.current = setInterval(() => {
+            setCurrentActiveCard(prev => (prev + 1) % totalCards);
+        }, 5500);
+        return () => autoPlayRef.current && clearInterval(autoPlayRef.current);
+    }, [isAutoPlayActive, totalCards]);
+    
+    // Determine if this specific card is currently active
+    const isCardActive = isActive && (cardIndex === currentActiveCard || !autoRotate);
+    
     // Cinematic styling with auto-rotation effects matching CinematicKPICarousel
     const cinematicStyle = {
-        transform: isActive && autoRotate ? 'scale(1.05)' : 'scale(0.98)',
+        transform: isCardActive ? 'scale(1.05)' : 'scale(0.98)',
         transition: 'transform 0.3s cubic-bezier(0.4,0,0.2,1), background 0.3s ease-in-out, box-shadow 0.3s ease-in-out, border 0.3s ease-in-out',
-        boxShadow: isActive && autoRotate 
+        boxShadow: isCardActive 
             ? '0 8px 25px -8px var(--theme-primary, rgba(59, 130, 246, 0.15)), 0 0 20px 5px var(--theme-primary, rgba(59, 130, 246, 0.1))' 
             : '0 4px 10px -4px var(--theme-primary, rgba(59, 130, 246, 0.05))'
     };
@@ -140,7 +281,7 @@ export const FailureAnalysisCard: React.FC<FailureAnalysisCardProps> = ({
     return (
         <Card 
             className={
-                isActive && autoRotate
+                isCardActive
                     ? `${glassCardClass} text-card-foreground border-2 border-primary/60 shadow-xl ring-1 ring-primary/60`
                     : `${glassCardClass} ${getSeverityCardColor(analysis.severity)} text-muted-foreground border border-primary/20 hover:border-primary/40 shadow-md`
             }
@@ -152,16 +293,16 @@ export const FailureAnalysisCard: React.FC<FailureAnalysisCardProps> = ({
                         <div 
                             className={`w-10 h-10 flex items-center justify-center rounded-full shadow ${getStatusIconBg(analysis.severity)}`}
                             style={{ 
-                                opacity: 1, 
-                                transform: 'scale(1)', 
+                                opacity: isCardActive ? 1 : 0.2, 
+                                transform: isCardActive ? 'scale(1)' : 'scale(0.8)', 
                                 transition: 'opacity 0.4s ease-in-out 0.1s, transform 0.4s ease-in-out 0.1s' 
                             }}
                         >
                             <FailureIcon className="h-5 w-5" />
                         </div>
                         <div style={{ 
-                            opacity: 1, 
-                            transform: 'translateY(0)', 
+                            opacity: isCardActive ? 1 : 0.2, 
+                            transform: isCardActive ? 'translateY(0)' : 'translateY(10px)', 
                             transition: 'opacity 0.4s ease-in-out 0.2s, transform 0.4s ease-in-out 0.2s' 
                         }}>
                             <h3 className="text-lg font-semibold text-card-foreground" style={{ backdropFilter: 'blur(4px)' }}>
@@ -173,8 +314,8 @@ export const FailureAnalysisCard: React.FC<FailureAnalysisCardProps> = ({
                         </div>
                     </div>
                     <div style={{ 
-                        opacity: 1, 
-                        transform: 'scale(1)', 
+                        opacity: isCardActive ? 1 : 0.2, 
+                        transform: isCardActive ? 'scale(1)' : 'scale(0.8)', 
                         transition: 'opacity 0.4s ease-in-out 0.2s, transform 0.4s ease-in-out 0.2s' 
                     }}>
                         <SeverityIndicator severity={analysis.severity} />
@@ -185,8 +326,8 @@ export const FailureAnalysisCard: React.FC<FailureAnalysisCardProps> = ({
             <CardContent className="space-y-4">
                 {/* Progress Bar with Cinematic Styling and Auto-rotation */}
                 <div className="space-y-2" style={{ 
-                    opacity: 1, 
-                    transform: 'translateY(0)', 
+                    opacity: isCardActive ? 1 : 0.2, 
+                    transform: isCardActive ? 'translateY(0)' : 'translateY(10px)', 
                     transition: 'opacity 0.4s ease-in-out 0.3s, transform 0.4s ease-in-out 0.3s' 
                 }}>
                     <div className="flex justify-between items-center">
@@ -197,7 +338,7 @@ export const FailureAnalysisCard: React.FC<FailureAnalysisCardProps> = ({
                         <div 
                             className="absolute top-0 left-0 h-full bg-gradient-to-r from-orange-400 to-orange-600 rounded-full transition-all duration-500 ease-out" 
                             style={{ 
-                                width: `${analysis.progress}%`,
+                                width: isCardActive ? `${analysis.progress}%` : '0%',
                                 transition: 'width 0.8s ease-out 0.7s'
                             }}
                         ></div>
@@ -208,8 +349,8 @@ export const FailureAnalysisCard: React.FC<FailureAnalysisCardProps> = ({
                 <div 
                     className="bg-white/10 dark:bg-zinc-900/20 backdrop-blur-sm border border-primary/10 rounded-lg p-3"
                     style={{ 
-                        opacity: 1, 
-                        transform: 'translateY(0)', 
+                        opacity: isCardActive ? 1 : 0.2, 
+                        transform: isCardActive ? 'translateY(0)' : 'translateY(10px)', 
                         transition: 'opacity 0.4s ease-in-out 0.4s, transform 0.4s ease-in-out 0.4s' 
                     }}
                 >
@@ -223,16 +364,16 @@ export const FailureAnalysisCard: React.FC<FailureAnalysisCardProps> = ({
                 <div 
                     className="grid grid-cols-3 gap-2 text-xs"
                     style={{ 
-                        opacity: 1, 
-                        transform: 'translateX(0)', 
+                        opacity: isCardActive ? 1 : 0.2, 
+                        transform: isCardActive ? 'translateX(0)' : 'translateX(-20px)', 
                         transition: 'opacity 0.5s ease-in-out 0.6s, transform 0.5s ease-in-out 0.6s' 
                     }}
                 >
                     <div 
                         className="text-center p-2 bg-green-500/20 border border-green-500/30 rounded-lg backdrop-blur-sm"
                         style={{ 
-                            opacity: 1, 
-                            transform: 'scale(1)', 
+                            opacity: isCardActive ? 1 : 0.2, 
+                            transform: isCardActive ? 'scale(1)' : 'scale(0.8)', 
                             transition: 'opacity 0.3s ease-in-out 0.7s, transform 0.3s ease-in-out 0.7s' 
                         }}
                     >
@@ -242,8 +383,8 @@ export const FailureAnalysisCard: React.FC<FailureAnalysisCardProps> = ({
                     <div 
                         className="text-center p-2 bg-yellow-500/20 border border-yellow-500/30 rounded-lg backdrop-blur-sm"
                         style={{ 
-                            opacity: 1, 
-                            transform: 'scale(1)', 
+                            opacity: isCardActive ? 1 : 0.2, 
+                            transform: isCardActive ? 'scale(1)' : 'scale(0.8)', 
                             transition: 'opacity 0.3s ease-in-out 0.8s, transform 0.3s ease-in-out 0.8s' 
                         }}
                     >
@@ -253,8 +394,8 @@ export const FailureAnalysisCard: React.FC<FailureAnalysisCardProps> = ({
                     <div 
                         className="text-center p-2 bg-red-500/20 border border-red-500/30 rounded-lg backdrop-blur-sm"
                         style={{ 
-                            opacity: 1, 
-                            transform: 'scale(1)', 
+                            opacity: isCardActive ? 1 : 0.2, 
+                            transform: isCardActive ? 'scale(1)' : 'scale(0.8)', 
                             transition: 'opacity 0.3s ease-in-out 0.9s, transform 0.3s ease-in-out 0.9s' 
                         }}
                     >
@@ -289,8 +430,8 @@ export const FailureAnalysisCard: React.FC<FailureAnalysisCardProps> = ({
                     onClick={onToggleExpand}
                     className="w-full mt-4 px-4 py-2 text-sm font-medium text-primary bg-primary/10 border border-primary/20 rounded-lg hover:bg-primary/20 hover:border-primary/40 transition-all duration-300 backdrop-blur-sm"
                     style={{ 
-                        opacity: 1, 
-                        transform: 'translateY(0)', 
+                        opacity: isCardActive ? 1 : 0.2, 
+                        transform: isCardActive ? 'translateY(0)' : 'translateY(10px)', 
                         transition: 'opacity 0.5s ease-in-out 0.8s, transform 0.5s ease-in-out 0.8s, background 0.3s ease-in-out, border 0.3s ease-in-out' 
                     }}
                 >
@@ -300,7 +441,7 @@ export const FailureAnalysisCard: React.FC<FailureAnalysisCardProps> = ({
                             <ChevronRight 
                                 className="h-4 w-4 rotate-90 transition-transform duration-300" 
                                 style={{ 
-                                    transform: 'translateY(0) scale(1) rotate(90deg)', 
+                                    transform: isCardActive ? 'translateY(0) scale(1) rotate(90deg)' : 'translateY(5px) scale(0.8) rotate(90deg)', 
                                     transition: 'transform 0.3s ease-in-out 0.8s' 
                                 }} 
                             />
@@ -311,7 +452,7 @@ export const FailureAnalysisCard: React.FC<FailureAnalysisCardProps> = ({
                             <ChevronRight 
                                 className="h-4 w-4 transition-transform duration-300" 
                                 style={{ 
-                                    transform: 'translateY(0) scale(1)', 
+                                    transform: isCardActive ? 'translateY(0) scale(1)' : 'translateY(5px) scale(0.8)', 
                                     transition: 'transform 0.3s ease-in-out 0.8s' 
                                 }} 
                             />

@@ -116,6 +116,9 @@ interface FailureAnalysisCardProps {
     autoRotate?: boolean;
     cardIndex?: number;
     totalCards?: number;
+    isTransitioning?: boolean;
+    isNextActive?: boolean;
+    isPrevActive?: boolean;
 }
 
 interface FailureAnalysisCarouselProps {
@@ -130,24 +133,53 @@ export const FailureAnalysisCarousel: React.FC<FailureAnalysisCarouselProps> = (
     const [currentSlide, setCurrentSlide] = React.useState(0);
     const [isAutoPlay, setIsAutoPlay] = React.useState(autoRotate);
     const [expandedCards, setExpandedCards] = React.useState<Set<number>>(new Set());
+    const [isTransitioning, setIsTransitioning] = React.useState(false);
     const autoPlayRef = React.useRef<NodeJS.Timeout | null>(null);
+    const transitionRef = React.useRef<NodeJS.Timeout | null>(null);
 
-    // Auto-rotation effect (5.5s per card) matching CinematicKPICarousel
+    // Enhanced auto-rotation effect with smooth transitions
     React.useEffect(() => {
-        if (!isAutoPlay || analyses.length <= 1) return;
+        if (!isAutoPlay || analyses.length <= 1) {
+            if (autoPlayRef.current) {
+                clearInterval(autoPlayRef.current);
+                autoPlayRef.current = null;
+            }
+            return;
+        }
+        
+        console.log('🎯 Starting auto-rotation with', analyses.length, 'cards');
         
         autoPlayRef.current = setInterval(() => {
-            setCurrentSlide(prev => {
-                const next = (prev + 1) % analyses.length;
-                console.log(`🔄 Auto-rotating from slide ${prev} to ${next}`);
-                return next;
-            });
-        }, 5500);
+            setIsTransitioning(true);
+            
+            // Clear any existing transition timeout
+            if (transitionRef.current) {
+                clearTimeout(transitionRef.current);
+            }
+            
+            // Start transition after a brief delay
+            transitionRef.current = setTimeout(() => {
+                setCurrentSlide(prev => {
+                    const next = (prev + 1) % analyses.length;
+                    console.log(`🔄 Auto-rotating from slide ${prev} to ${next}`);
+                    return next;
+                });
+                
+                // End transition after animation completes
+                setTimeout(() => {
+                    setIsTransitioning(false);
+                }, 300);
+            }, 100);
+        }, 5500); // 5.5s per card matching CinematicKPICarousel
 
         return () => {
             if (autoPlayRef.current) {
                 clearInterval(autoPlayRef.current);
                 autoPlayRef.current = null;
+            }
+            if (transitionRef.current) {
+                clearTimeout(transitionRef.current);
+                transitionRef.current = null;
             }
         };
     }, [isAutoPlay, analyses.length]);
@@ -164,23 +196,40 @@ export const FailureAnalysisCarousel: React.FC<FailureAnalysisCarouselProps> = (
         });
     };
 
-    // Pause/resume on hover/touch
+    // Enhanced pause/resume with proper cleanup
     const handlePause = React.useCallback(() => {
         console.log('🚫 Auto-play paused');
+        if (autoPlayRef.current) {
+            clearInterval(autoPlayRef.current);
+            autoPlayRef.current = null;
+        }
         setIsAutoPlay(false);
     }, []);
     
     const handleResume = React.useCallback(() => {
-        if (autoRotate) {
+        if (autoRotate && !isAutoPlay) {
             console.log('▶️ Auto-play resumed');
             setIsAutoPlay(true);
         }
-    }, [autoRotate]);
+    }, [autoRotate, isAutoPlay]);
 
     const handleManualSlideChange = (index: number) => {
         console.log(`👆 Manual slide change to ${index}`);
+        setIsTransitioning(true);
+        
+        // Clear auto-play
+        if (autoPlayRef.current) {
+            clearInterval(autoPlayRef.current);
+            autoPlayRef.current = null;
+        }
+        
         setCurrentSlide(index);
-        setIsAutoPlay(false); // Pause auto-play when user manually changes slide
+        setIsAutoPlay(false);
+        
+        // End transition
+        setTimeout(() => {
+            setIsTransitioning(false);
+        }, 300);
     };
 
     const toggleAutoPlay = () => {
@@ -189,6 +238,7 @@ export const FailureAnalysisCarousel: React.FC<FailureAnalysisCarouselProps> = (
         setIsAutoPlay(newAutoPlay);
     };
 
+    // Safety check and error handling
     if (!analyses || analyses.length === 0) {
         return (
             <div className="text-center p-8 text-muted-foreground">
@@ -196,6 +246,13 @@ export const FailureAnalysisCarousel: React.FC<FailureAnalysisCarouselProps> = (
             </div>
         );
     }
+
+    // Ensure currentSlide is within bounds
+    React.useEffect(() => {
+        if (currentSlide >= analyses.length) {
+            setCurrentSlide(0);
+        }
+    }, [analyses.length, currentSlide]);
 
     return (
         <div className="space-y-4">
@@ -228,26 +285,47 @@ export const FailureAnalysisCarousel: React.FC<FailureAnalysisCarouselProps> = (
                 </div>
             </div>
 
-            {/* Cards Container */}
+            {/* Cards Container with Enhanced Auto-rotation */}
             <div 
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                className="relative overflow-hidden"
                 onMouseEnter={handlePause}
                 onMouseLeave={handleResume}
                 onTouchStart={handlePause}
                 onTouchEnd={handleResume}
             >
-                {analyses.map((analysis, index) => (
-                    <FailureAnalysisCard
-                        key={`${analysis.type}-${index}`}
-                        analysis={analysis}
-                        expanded={expandedCards.has(index)}
-                        onToggleExpand={() => handleToggleExpand(index)}
-                        isActive={index === currentSlide}
-                        autoRotate={isAutoPlay}
-                        cardIndex={index}
-                        totalCards={analyses.length}
-                    />
-                ))}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {analyses.map((analysis, index) => {
+                        const isActive = index === currentSlide;
+                        const isNextActive = ((currentSlide + 1) % analyses.length) === index;
+                        const isPrevActive = ((currentSlide - 1 + analyses.length) % analyses.length) === index;
+                        
+                        return (
+                            <FailureAnalysisCard
+                                key={`failure-${analysis.type}-${index}`}
+                                analysis={analysis}
+                                expanded={expandedCards.has(index)}
+                                onToggleExpand={() => handleToggleExpand(index)}
+                                isActive={isActive}
+                                autoRotate={isAutoPlay}
+                                cardIndex={index}
+                                totalCards={analyses.length}
+                                isTransitioning={isTransitioning}
+                                isNextActive={isNextActive}
+                                isPrevActive={isPrevActive}
+                            />
+                        );
+                    })}
+                </div>
+                
+                {/* Rotating indicator overlay */}
+                {isAutoPlay && (
+                    <div className="absolute top-2 right-2 pointer-events-none">
+                        <div className="w-3 h-3 bg-primary/60 rounded-full animate-pulse">
+                            <div className="w-full h-full bg-primary rounded-full animate-spin border-2 border-white/30" 
+                                 style={{ animationDuration: '5.5s' }} />
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Slide indicators */}
@@ -277,20 +355,49 @@ export const FailureAnalysisCard: React.FC<FailureAnalysisCardProps> = ({
     isActive = true,
     autoRotate = true,
     cardIndex = 0,
-    totalCards = 1
+    totalCards = 1,
+    isTransitioning = false,
+    isNextActive = false,
+    isPrevActive = false
 }) => {
     const FailureIcon = FAILURE_ICONS[analysis.type] || Activity;
+    const [animationPhase, setAnimationPhase] = React.useState(0);
+    
+    // Enhanced animation phases for auto-rotation
+    React.useEffect(() => {
+        if (!autoRotate || !isActive) return;
+        
+        const phaseInterval = setInterval(() => {
+            setAnimationPhase(prev => (prev + 1) % 4);
+        }, 1375); // 5.5s / 4 phases = 1.375s per phase
+        
+        return () => clearInterval(phaseInterval);
+    }, [isActive, autoRotate]);
     
     // Use the same glass card class as CinematicKPICarousel for consistency
-    const glassCardClass = "bg-white/5 dark:bg-zinc-900/10 backdrop-blur-sm border border-primary/20 hover:border-primary/40 shadow-md hover:shadow-xl transition-all duration-300 ease-in-out";
+    const glassCardClass = "bg-white/5 dark:bg-zinc-900/10 backdrop-blur-sm border border-primary/20 hover:border-primary/40 shadow-md hover:shadow-xl transition-all duration-500 ease-in-out";
     
-    // Cinematic styling with auto-rotation effects matching CinematicKPICarousel
+    // Enhanced cinematic styling with multi-phase animations
+    const getTransformScale = () => {
+        if (isActive) return 1.05;
+        if (isNextActive || isPrevActive) return 1.02;
+        return 0.98;
+    };
+    
+    const getOpacity = () => {
+        if (isActive) return 1;
+        if (isNextActive || isPrevActive) return 0.9;
+        return 0.7;
+    };
+    
     const cinematicStyle = {
-        transform: isActive ? 'scale(1.05)' : 'scale(0.98)',
-        transition: 'transform 0.3s cubic-bezier(0.4,0,0.2,1), background 0.3s ease-in-out, box-shadow 0.3s ease-in-out, border 0.3s ease-in-out',
+        transform: `scale(${getTransformScale()}) ${isTransitioning ? 'translateY(-2px)' : 'translateY(0)'}`,
+        opacity: getOpacity(),
+        transition: 'all 0.5s cubic-bezier(0.4,0,0.2,1)',
         boxShadow: isActive 
             ? '0 8px 25px -8px var(--theme-primary, rgba(59, 130, 246, 0.15)), 0 0 20px 5px var(--theme-primary, rgba(59, 130, 246, 0.1))' 
-            : '0 4px 10px -4px var(--theme-primary, rgba(59, 130, 246, 0.05))'
+            : '0 4px 10px -4px var(--theme-primary, rgba(59, 130, 246, 0.05))',
+        filter: isActive ? 'brightness(1.1)' : 'brightness(0.95)'
     };
 
     return (
@@ -309,16 +416,28 @@ export const FailureAnalysisCard: React.FC<FailureAnalysisCardProps> = ({
                             className={`w-10 h-10 flex items-center justify-center rounded-full shadow ${getStatusIconBg(analysis.severity)}`}
                             style={{ 
                                 opacity: isActive ? 1 : 0.6, 
-                                transform: isActive ? 'scale(1)' : 'scale(0.95)', 
-                                transition: 'opacity 0.4s ease-in-out 0.1s, transform 0.4s ease-in-out 0.1s' 
+                                transform: isActive 
+                                    ? `scale(1) rotate(${animationPhase * 90}deg)` 
+                                    : 'scale(0.95) rotate(0deg)', 
+                                transition: 'all 0.6s cubic-bezier(0.4,0,0.2,1)' 
                             }}
                         >
-                            <FailureIcon className="h-5 w-5" />
+                            <FailureIcon 
+                                className="h-5 w-5" 
+                                style={{ 
+                                    transform: isActive 
+                                        ? `rotate(-${animationPhase * 90}deg)` 
+                                        : 'rotate(0deg)',
+                                    transition: 'transform 0.6s cubic-bezier(0.4,0,0.2,1)'
+                                }} 
+                            />
                         </div>
                         <div style={{ 
                             opacity: isActive ? 1 : 0.7, 
-                            transform: isActive ? 'translateY(0)' : 'translateY(5px)', 
-                            transition: 'opacity 0.4s ease-in-out 0.2s, transform 0.4s ease-in-out 0.2s' 
+                            transform: isActive 
+                                ? `translateY(0) translateX(${Math.sin(animationPhase * Math.PI / 2) * 2}px)` 
+                                : 'translateY(5px) translateX(0px)', 
+                            transition: 'all 0.6s cubic-bezier(0.4,0,0.2,1)' 
                         }}>
                             <h3 className="text-lg font-semibold text-card-foreground" style={{ backdropFilter: 'blur(4px)' }}>
                                 {analysis.type}
@@ -351,12 +470,25 @@ export const FailureAnalysisCard: React.FC<FailureAnalysisCardProps> = ({
                     </div>
                     <div className="relative h-2 w-full bg-background/30 rounded-full overflow-hidden">
                         <div 
-                            className="absolute top-0 left-0 h-full bg-gradient-to-r from-orange-400 to-orange-600 rounded-full transition-all duration-500 ease-out" 
+                            className="absolute top-0 left-0 h-full bg-gradient-to-r from-orange-400 to-orange-600 rounded-full transition-all duration-1000 ease-out" 
                             style={{ 
                                 width: isActive ? `${analysis.progress}%` : `${analysis.progress * 0.3}%`,
-                                transition: 'width 0.8s ease-out 0.7s'
+                                transform: isActive 
+                                    ? `scaleY(1) translateX(${Math.sin(animationPhase * Math.PI / 2) * 2}px)` 
+                                    : 'scaleY(0.8) translateX(0px)',
+                                transition: 'all 1s cubic-bezier(0.4,0,0.2,1)',
+                                filter: isActive ? 'brightness(1.1) saturate(1.2)' : 'brightness(0.9) saturate(0.8)'
                             }}
                         ></div>
+                        {isActive && (
+                            <div 
+                                className="absolute top-0 left-0 h-full bg-gradient-to-r from-orange-300 to-orange-500 rounded-full opacity-50"
+                                style={{ 
+                                    width: `${analysis.progress * 0.7}%`,
+                                    animation: 'pulse 2s ease-in-out infinite'
+                                }}
+                            />
+                        )}
                     </div>
                 </div>
 
@@ -381,42 +513,57 @@ export const FailureAnalysisCard: React.FC<FailureAnalysisCardProps> = ({
                     style={{ 
                         opacity: isActive ? 1 : 0.6, 
                         transform: isActive ? 'translateX(0)' : 'translateX(-10px)', 
-                        transition: 'opacity 0.5s ease-in-out 0.6s, transform 0.5s ease-in-out 0.6s' 
+                        transition: 'all 0.6s cubic-bezier(0.4,0,0.2,1)' 
                     }}
                 >
-                    <div 
-                        className="text-center p-2 bg-green-500/20 border border-green-500/30 rounded-lg backdrop-blur-sm"
-                        style={{ 
-                            opacity: isActive ? 1 : 0.6, 
-                            transform: isActive ? 'scale(1)' : 'scale(0.95)', 
-                            transition: 'opacity 0.3s ease-in-out 0.7s, transform 0.3s ease-in-out 0.7s' 
-                        }}
-                    >
-                        <div className="font-semibold text-green-300">Good</div>
-                        <div className="text-green-400">≤ {analysis.threshold.good}</div>
-                    </div>
-                    <div 
-                        className="text-center p-2 bg-yellow-500/20 border border-yellow-500/30 rounded-lg backdrop-blur-sm"
-                        style={{ 
-                            opacity: isActive ? 1 : 0.6, 
-                            transform: isActive ? 'scale(1)' : 'scale(0.95)', 
-                            transition: 'opacity 0.3s ease-in-out 0.8s, transform 0.3s ease-in-out 0.8s' 
-                        }}
-                    >
-                        <div className="font-semibold text-yellow-300">Moderate</div>
-                        <div className="text-yellow-400">≤ {analysis.threshold.moderate}</div>
-                    </div>
-                    <div 
-                        className="text-center p-2 bg-red-500/20 border border-red-500/30 rounded-lg backdrop-blur-sm"
-                        style={{ 
-                            opacity: isActive ? 1 : 0.6, 
-                            transform: isActive ? 'scale(1)' : 'scale(0.95)', 
-                            transition: 'opacity 0.3s ease-in-out 0.9s, transform 0.3s ease-in-out 0.9s' 
-                        }}
-                    >
-                        <div className="font-semibold text-red-300">Severe</div>
-                        <div className="text-red-400">{'>'} {analysis.threshold.severe}</div>
-                    </div>
+                    {[
+                        { 
+                            label: 'Good', 
+                            value: analysis.threshold.good, 
+                            bg: 'bg-green-500/20', 
+                            border: 'border-green-500/30', 
+                            textColor: 'text-green-300',
+                            valueColor: 'text-green-400',
+                            delay: 0.7
+                        },
+                        { 
+                            label: 'Moderate', 
+                            value: analysis.threshold.moderate, 
+                            bg: 'bg-yellow-500/20', 
+                            border: 'border-yellow-500/30', 
+                            textColor: 'text-yellow-300',
+                            valueColor: 'text-yellow-400',
+                            delay: 0.8
+                        },
+                        { 
+                            label: 'Severe', 
+                            value: analysis.threshold.severe, 
+                            bg: 'bg-red-500/20', 
+                            border: 'border-red-500/30', 
+                            textColor: 'text-red-300',
+                            valueColor: 'text-red-400',
+                            delay: 0.9,
+                            isGreaterThan: true
+                        }
+                    ].map((threshold, index) => (
+                        <div 
+                            key={threshold.label}
+                            className={`text-center p-2 ${threshold.bg} border ${threshold.border} rounded-lg backdrop-blur-sm`}
+                            style={{ 
+                                opacity: isActive ? 1 : 0.6, 
+                                transform: isActive 
+                                    ? `scale(1) translateY(${Math.sin((animationPhase + index) * Math.PI / 2) * 2}px)` 
+                                    : 'scale(0.95) translateY(0px)', 
+                                transition: `all 0.6s cubic-bezier(0.4,0,0.2,1)`,
+                                transitionDelay: `${threshold.delay}s`
+                            }}
+                        >
+                            <div className={`font-semibold ${threshold.textColor}`}>{threshold.label}</div>
+                            <div className={threshold.valueColor}>
+                                {threshold.isGreaterThan ? '>' : '≤'} {threshold.value}
+                            </div>
+                        </div>
+                    ))}
                 </div>
 
                 {/* Expandable Details with Cinematic Animation */}

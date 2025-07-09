@@ -112,38 +112,83 @@ interface FailureAnalysisCardProps {
     analysis: FailureAnalysis;
     expanded?: boolean;
     onToggleExpand?: () => void;
+    isActive?: boolean;
+    autoRotate?: boolean;
 }
 
 export const FailureAnalysisCard: React.FC<FailureAnalysisCardProps> = ({
     analysis,
     expanded = false,
-    onToggleExpand
+    onToggleExpand,
+    isActive = true,
+    autoRotate = true
 }) => {
     const FailureIcon = FAILURE_ICONS[analysis.type] || Activity;
     
-    // Use glass card class for consistency with cinematic carousel
+    // Use the same glass card class as CinematicKPICarousel for consistency
     const glassCardClass = "bg-white/5 dark:bg-zinc-900/10 backdrop-blur-sm border border-primary/20 hover:border-primary/40 shadow-md hover:shadow-xl transition-all duration-300 ease-in-out";
+    
+    // Cinematic styling with auto-rotation effects matching CinematicKPICarousel
+    const cinematicStyle = {
+        transform: isActive && autoRotate ? 'scale(1.05)' : 'scale(0.98)',
+        transition: 'transform 0.3s cubic-bezier(0.4,0,0.2,1), background 0.3s ease-in-out, box-shadow 0.3s ease-in-out, border 0.3s ease-in-out',
+        boxShadow: isActive && autoRotate 
+            ? '0 8px 25px -8px var(--theme-primary, rgba(59, 130, 246, 0.15)), 0 0 20px 5px var(--theme-primary, rgba(59, 130, 246, 0.1))' 
+            : '0 4px 10px -4px var(--theme-primary, rgba(59, 130, 246, 0.05))'
+    };
 
     return (
-        <Card className={`${glassCardClass} ${getSeverityCardColor(analysis.severity)} hover:scale-[1.02] transition-all duration-300`}>
+        <Card 
+            className={
+                isActive && autoRotate
+                    ? `${glassCardClass} text-card-foreground border-2 border-primary/60 shadow-xl ring-1 ring-primary/60`
+                    : `${glassCardClass} ${getSeverityCardColor(analysis.severity)} text-muted-foreground border border-primary/20 hover:border-primary/40 shadow-md`
+            }
+            style={cinematicStyle}
+        >
             <CardHeader className="pb-3">
                 <CardTitle className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 flex items-center justify-center rounded-full shadow ${getStatusIconBg(analysis.severity)}`}>
+                        <div 
+                            className={`w-10 h-10 flex items-center justify-center rounded-full shadow ${getStatusIconBg(analysis.severity)}`}
+                            style={{ 
+                                opacity: 1, 
+                                transform: 'scale(1)', 
+                                transition: 'opacity 0.4s ease-in-out 0.1s, transform 0.4s ease-in-out 0.1s' 
+                            }}
+                        >
                             <FailureIcon className="h-5 w-5" />
                         </div>
-                        <div>
-                            <h3 className="text-lg font-semibold text-card-foreground">{analysis.type}</h3>
-                            <p className="text-sm text-muted-foreground">Index: {analysis.index.toFixed(2)}</p>
+                        <div style={{ 
+                            opacity: 1, 
+                            transform: 'translateY(0)', 
+                            transition: 'opacity 0.4s ease-in-out 0.2s, transform 0.4s ease-in-out 0.2s' 
+                        }}>
+                            <h3 className="text-lg font-semibold text-card-foreground" style={{ backdropFilter: 'blur(4px)' }}>
+                                {analysis.type}
+                            </h3>
+                            <p className="text-sm text-muted-foreground" style={{ backdropFilter: 'blur(4px)' }}>
+                                Index: {analysis.index.toFixed(2)}
+                            </p>
                         </div>
                     </div>
-                    <SeverityIndicator severity={analysis.severity} />
+                    <div style={{ 
+                        opacity: 1, 
+                        transform: 'scale(1)', 
+                        transition: 'opacity 0.4s ease-in-out 0.2s, transform 0.4s ease-in-out 0.2s' 
+                    }}>
+                        <SeverityIndicator severity={analysis.severity} />
+                    </div>
                 </CardTitle>
             </CardHeader>
 
             <CardContent className="space-y-4">
-                {/* Progress Bar with Cinematic Styling */}
-                <div className="space-y-2">
+                {/* Progress Bar with Cinematic Styling and Auto-rotation */}
+                <div className="space-y-2" style={{ 
+                    opacity: 1, 
+                    transform: 'translateY(0)', 
+                    transition: 'opacity 0.4s ease-in-out 0.3s, transform 0.4s ease-in-out 0.3s' 
+                }}>
                     <div className="flex justify-between items-center">
                         <span className="text-sm font-medium text-card-foreground">Severity Level</span>
                         <span className="text-sm text-muted-foreground">{analysis.progress.toFixed(1)}%</span>
@@ -151,30 +196,68 @@ export const FailureAnalysisCard: React.FC<FailureAnalysisCardProps> = ({
                     <div className="relative h-2 w-full bg-background/30 rounded-full overflow-hidden">
                         <div 
                             className="absolute top-0 left-0 h-full bg-gradient-to-r from-orange-400 to-orange-600 rounded-full transition-all duration-500 ease-out" 
-                            style={{ width: `${analysis.progress}%` }}
+                            style={{ 
+                                width: `${analysis.progress}%`,
+                                transition: 'width 0.8s ease-out 0.7s'
+                            }}
                         ></div>
                     </div>
                 </div>
 
-                {/* Description with Glass Effect */}
-                <div className="bg-white/10 dark:bg-zinc-900/20 backdrop-blur-sm border border-primary/10 rounded-lg p-3">
+                {/* Description with Glass Effect and Animation */}
+                <div 
+                    className="bg-white/10 dark:bg-zinc-900/20 backdrop-blur-sm border border-primary/10 rounded-lg p-3"
+                    style={{ 
+                        opacity: 1, 
+                        transform: 'translateY(0)', 
+                        transition: 'opacity 0.4s ease-in-out 0.4s, transform 0.4s ease-in-out 0.4s' 
+                    }}
+                >
                     <div className="flex items-start gap-2">
                         <Info className="h-4 w-4 text-primary mt-1 flex-shrink-0" />
                         <p className="text-sm text-card-foreground">{analysis.description}</p>
                     </div>
                 </div>
 
-                {/* Threshold Information with Theme Colors */}
-                <div className="grid grid-cols-3 gap-2 text-xs">
-                    <div className="text-center p-2 bg-green-500/20 border border-green-500/30 rounded-lg backdrop-blur-sm">
+                {/* Threshold Information with Theme Colors and Staggered Animation */}
+                <div 
+                    className="grid grid-cols-3 gap-2 text-xs"
+                    style={{ 
+                        opacity: 1, 
+                        transform: 'translateX(0)', 
+                        transition: 'opacity 0.5s ease-in-out 0.6s, transform 0.5s ease-in-out 0.6s' 
+                    }}
+                >
+                    <div 
+                        className="text-center p-2 bg-green-500/20 border border-green-500/30 rounded-lg backdrop-blur-sm"
+                        style={{ 
+                            opacity: 1, 
+                            transform: 'scale(1)', 
+                            transition: 'opacity 0.3s ease-in-out 0.7s, transform 0.3s ease-in-out 0.7s' 
+                        }}
+                    >
                         <div className="font-semibold text-green-300">Good</div>
                         <div className="text-green-400">≤ {analysis.threshold.good}</div>
                     </div>
-                    <div className="text-center p-2 bg-yellow-500/20 border border-yellow-500/30 rounded-lg backdrop-blur-sm">
+                    <div 
+                        className="text-center p-2 bg-yellow-500/20 border border-yellow-500/30 rounded-lg backdrop-blur-sm"
+                        style={{ 
+                            opacity: 1, 
+                            transform: 'scale(1)', 
+                            transition: 'opacity 0.3s ease-in-out 0.8s, transform 0.3s ease-in-out 0.8s' 
+                        }}
+                    >
                         <div className="font-semibold text-yellow-300">Moderate</div>
                         <div className="text-yellow-400">≤ {analysis.threshold.moderate}</div>
                     </div>
-                    <div className="text-center p-2 bg-red-500/20 border border-red-500/30 rounded-lg backdrop-blur-sm">
+                    <div 
+                        className="text-center p-2 bg-red-500/20 border border-red-500/30 rounded-lg backdrop-blur-sm"
+                        style={{ 
+                            opacity: 1, 
+                            transform: 'scale(1)', 
+                            transition: 'opacity 0.3s ease-in-out 0.9s, transform 0.3s ease-in-out 0.9s' 
+                        }}
+                    >
                         <div className="font-semibold text-red-300">Severe</div>
                         <div className="text-red-400">{'>'} {analysis.threshold.severe}</div>
                     </div>
@@ -201,20 +284,37 @@ export const FailureAnalysisCard: React.FC<FailureAnalysisCardProps> = ({
                     </div>
                 )}
 
-                {/* Toggle Button with Theme Styling */}
+                {/* Toggle Button with Cinematic Theme Styling */}
                 <button
                     onClick={onToggleExpand}
                     className="w-full mt-4 px-4 py-2 text-sm font-medium text-primary bg-primary/10 border border-primary/20 rounded-lg hover:bg-primary/20 hover:border-primary/40 transition-all duration-300 backdrop-blur-sm"
+                    style={{ 
+                        opacity: 1, 
+                        transform: 'translateY(0)', 
+                        transition: 'opacity 0.5s ease-in-out 0.8s, transform 0.5s ease-in-out 0.8s, background 0.3s ease-in-out, border 0.3s ease-in-out' 
+                    }}
                 >
                     {expanded ? (
                         <span className="flex items-center justify-center gap-2">
                             <span>Show Less</span>
-                            <ChevronRight className="h-4 w-4 rotate-90 transition-transform duration-300" />
+                            <ChevronRight 
+                                className="h-4 w-4 rotate-90 transition-transform duration-300" 
+                                style={{ 
+                                    transform: 'translateY(0) scale(1) rotate(90deg)', 
+                                    transition: 'transform 0.3s ease-in-out 0.8s' 
+                                }} 
+                            />
                         </span>
                     ) : (
                         <span className="flex items-center justify-center gap-2">
                             <span>Show Details</span>
-                            <ChevronRight className="h-4 w-4 transition-transform duration-300" />
+                            <ChevronRight 
+                                className="h-4 w-4 transition-transform duration-300" 
+                                style={{ 
+                                    transform: 'translateY(0) scale(1)', 
+                                    transition: 'transform 0.3s ease-in-out 0.8s' 
+                                }} 
+                            />
                         </span>
                     )}
                 </button>

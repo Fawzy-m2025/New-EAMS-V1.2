@@ -792,7 +792,7 @@ export class FailureAnalysisEngine {
         let totalWeight = 0;
 
         analyses.forEach(analysis => {
-            const weight = weights[analysis.type] || 0.05;
+            const weight = weights[analysis.type as keyof typeof weights] || 0.05;
             weightedSum += weight * analysis.index;
             totalWeight += weight;
         });

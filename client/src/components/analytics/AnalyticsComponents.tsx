@@ -31,8 +31,20 @@ import {
 } from 'lucide-react';
 import { FailureAnalysis, MasterHealthAssessment } from '@/utils/failureAnalysisEngine';
 
+// Define failure types for better type safety
+type FailureType =
+    | 'Unbalance'
+    | 'Misalignment'
+    | 'Soft Foot'
+    | 'Bearing Defects'
+    | 'Mechanical Looseness'
+    | 'Cavitation'
+    | 'Electrical Faults'
+    | 'Flow Turbulence'
+    | 'Resonance';
+
 // Icon mapping for failure types
-const FAILURE_ICONS = {
+const FAILURE_ICONS: Record<FailureType, React.ComponentType<any>> = {
     'Unbalance': Scale,
     'Misalignment': Target,
     'Soft Foot': Building,
@@ -141,7 +153,7 @@ export const FailureAnalysisCarousel: React.FC<FailureAnalysisCarouselProps> = (
             }
             return;
         }
-        
+
         autoPlayRef.current = setInterval(() => {
             setCurrentSlide(prev => (prev + 1) % analyses.length);
         }, 5500); // Exact match with CinematicKPICarousel timing
@@ -227,7 +239,7 @@ export const FailureAnalysisCarousel: React.FC<FailureAnalysisCarouselProps> = (
             </div>
 
             {/* Cards Container matching CinematicKPICarousel structure */}
-            <div 
+            <div
                 className="relative overflow-hidden"
                 onMouseEnter={handlePause}
                 onMouseLeave={handleResume}
@@ -237,7 +249,7 @@ export const FailureAnalysisCarousel: React.FC<FailureAnalysisCarouselProps> = (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {analyses.map((analysis, index) => {
                         const isActive = index === currentSlide;
-                        
+
                         return (
                             <FailureAnalysisCard
                                 key={`failure-${analysis.type}-${index}`}
@@ -252,13 +264,13 @@ export const FailureAnalysisCarousel: React.FC<FailureAnalysisCarouselProps> = (
                         );
                     })}
                 </div>
-                
+
                 {/* Auto-play indicator matching CinematicKPICarousel */}
                 {isAutoPlay && (
                     <div className="absolute top-2 right-2 pointer-events-none">
                         <div className="w-3 h-3 bg-primary/60 rounded-full animate-pulse">
-                            <div className="w-full h-full bg-primary rounded-full animate-spin border-2 border-white/30" 
-                                 style={{ animationDuration: '5.5s' }} />
+                            <div className="w-full h-full bg-primary rounded-full animate-spin border-2 border-white/30"
+                                style={{ animationDuration: '5.5s' }} />
                         </div>
                     </div>
                 )}
@@ -270,11 +282,10 @@ export const FailureAnalysisCarousel: React.FC<FailureAnalysisCarouselProps> = (
                     <button
                         key={index}
                         onClick={() => handleManualSlideChange(index)}
-                        className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                            index === currentSlide 
-                                ? 'bg-primary w-6' 
-                                : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
-                        }`}
+                        className={`w-2 h-2 rounded-full transition-all duration-300 ${index === currentSlide
+                            ? 'bg-primary w-6'
+                            : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                            }`}
                         aria-label={`Go to slide ${index + 1}`}
                         aria-current={index === currentSlide ? 'true' : 'false'}
                     />
@@ -293,24 +304,24 @@ export const FailureAnalysisCard: React.FC<FailureAnalysisCardProps> = ({
     cardIndex = 0,
     totalCards = 1
 }) => {
-    const FailureIcon = FAILURE_ICONS[analysis.type] || Activity;
-    
+    const FailureIcon = FAILURE_ICONS[analysis.type as FailureType] || Activity;
+
     // Use the same glass card class as CinematicKPICarousel for consistency
     const glassCardClass = "bg-white/5 dark:bg-zinc-900/10 backdrop-blur-sm border border-primary/20 hover:border-primary/40 shadow-md hover:shadow-xl transition-all duration-500 ease-in-out";
-    
+
     // Cinematic styling matching CinematicKPICarousel exactly
     const cinematicStyle = {
         transform: isActive ? 'scale(1.05)' : 'scale(0.98)',
         opacity: isActive ? 1 : 0.7,
         transition: 'transform 0.3s cubic-bezier(0.4,0,0.2,1), opacity 0.3s ease-in-out, background 0.3s ease-in-out, box-shadow 0.3s ease-in-out, border 0.3s ease-in-out',
-        boxShadow: isActive 
-            ? '0 8px 25px -8px var(--theme-primary, rgba(59, 130, 246, 0.15)), 0 0 20px 5px var(--theme-primary, rgba(59, 130, 246, 0.1))' 
+        boxShadow: isActive
+            ? '0 8px 25px -8px var(--theme-primary, rgba(59, 130, 246, 0.15)), 0 0 20px 5px var(--theme-primary, rgba(59, 130, 246, 0.1))'
             : '0 4px 10px -4px var(--theme-primary, rgba(59, 130, 246, 0.05))',
         cursor: 'pointer'
     };
 
     return (
-        <Card 
+        <Card
             className={
                 isActive
                     ? `${glassCardClass} text-card-foreground border-2 border-primary/60 shadow-xl ring-1 ring-primary/60`
@@ -321,20 +332,20 @@ export const FailureAnalysisCard: React.FC<FailureAnalysisCardProps> = ({
             <CardHeader className="pb-3">
                 <CardTitle className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div 
+                        <div
                             className={`w-10 h-10 flex items-center justify-center rounded-full shadow ${getStatusIconBg(analysis.severity)}`}
-                            style={{ 
-                                opacity: isActive ? 1 : 0.2, 
-                                transform: isActive ? 'scale(1)' : 'scale(0.8)', 
-                                transition: 'opacity 0.4s ease-in-out 0.1s, transform 0.4s ease-in-out 0.1s' 
+                            style={{
+                                opacity: isActive ? 1 : 0.2,
+                                transform: isActive ? 'scale(1)' : 'scale(0.8)',
+                                transition: 'opacity 0.4s ease-in-out 0.1s, transform 0.4s ease-in-out 0.1s'
                             }}
                         >
                             <FailureIcon className="h-5 w-5" />
                         </div>
-                        <div style={{ 
-                            opacity: isActive ? 1 : 0.2, 
-                            transform: isActive ? 'translateY(0)' : 'translateY(10px)', 
-                            transition: 'opacity 0.4s ease-in-out 0.3s, transform 0.4s ease-in-out 0.3s' 
+                        <div style={{
+                            opacity: isActive ? 1 : 0.2,
+                            transform: isActive ? 'translateY(0)' : 'translateY(10px)',
+                            transition: 'opacity 0.4s ease-in-out 0.3s, transform 0.4s ease-in-out 0.3s'
                         }}>
                             <h3 className="text-lg font-semibold text-card-foreground" style={{ backdropFilter: 'blur(4px)' }}>
                                 {analysis.type}
@@ -344,10 +355,10 @@ export const FailureAnalysisCard: React.FC<FailureAnalysisCardProps> = ({
                             </p>
                         </div>
                     </div>
-                    <div style={{ 
-                        opacity: isActive ? 1 : 0.2, 
-                        transform: isActive ? 'scale(1)' : 'scale(0.8)', 
-                        transition: 'opacity 0.4s ease-in-out 0.2s, transform 0.4s ease-in-out 0.2s' 
+                    <div style={{
+                        opacity: isActive ? 1 : 0.2,
+                        transform: isActive ? 'scale(1)' : 'scale(0.8)',
+                        transition: 'opacity 0.4s ease-in-out 0.2s, transform 0.4s ease-in-out 0.2s'
                     }}>
                         <SeverityIndicator severity={analysis.severity} />
                     </div>
@@ -356,19 +367,19 @@ export const FailureAnalysisCard: React.FC<FailureAnalysisCardProps> = ({
 
             <CardContent className="space-y-4">
                 {/* Progress Bar matching CinematicKPICarousel style */}
-                <div className="space-y-2" style={{ 
-                    opacity: isActive ? 1 : 0.2, 
-                    transform: isActive ? 'translateY(0)' : 'translateY(10px)', 
-                    transition: 'opacity 0.4s ease-in-out 0.4s, transform 0.4s ease-in-out 0.4s' 
+                <div className="space-y-2" style={{
+                    opacity: isActive ? 1 : 0.2,
+                    transform: isActive ? 'translateY(0)' : 'translateY(10px)',
+                    transition: 'opacity 0.4s ease-in-out 0.4s, transform 0.4s ease-in-out 0.4s'
                 }}>
                     <div className="flex justify-between items-center">
                         <span className="text-sm font-medium text-card-foreground">Severity Level</span>
                         <span className="text-sm text-muted-foreground">{analysis.progress.toFixed(1)}%</span>
                     </div>
                     <div className="relative h-2 w-full bg-background/30 rounded-full overflow-hidden">
-                        <div 
-                            className="absolute top-0 left-0 h-full bg-primary rounded-full" 
-                            style={{ 
+                        <div
+                            className="absolute top-0 left-0 h-full bg-primary rounded-full"
+                            style={{
                                 width: isActive ? `${analysis.progress}%` : '0%',
                                 transition: 'width 0.8s ease-out 0.7s'
                             }}
@@ -377,12 +388,12 @@ export const FailureAnalysisCard: React.FC<FailureAnalysisCardProps> = ({
                 </div>
 
                 {/* Description with Glass Effect */}
-                <div 
+                <div
                     className="bg-white/10 dark:bg-zinc-900/20 backdrop-blur-sm border border-primary/10 rounded-lg p-3"
-                    style={{ 
-                        opacity: isActive ? 1 : 0.2, 
-                        transform: isActive ? 'translateY(0)' : 'translateY(10px)', 
-                        transition: 'opacity 0.4s ease-in-out 0.5s, transform 0.4s ease-in-out 0.5s' 
+                    style={{
+                        opacity: isActive ? 1 : 0.2,
+                        transform: isActive ? 'translateY(0)' : 'translateY(10px)',
+                        transition: 'opacity 0.4s ease-in-out 0.5s, transform 0.4s ease-in-out 0.5s'
                     }}
                 >
                     <div className="flex items-start gap-2">
@@ -392,42 +403,42 @@ export const FailureAnalysisCard: React.FC<FailureAnalysisCardProps> = ({
                 </div>
 
                 {/* Threshold Information matching CinematicKPICarousel style */}
-                <div 
+                <div
                     className="grid grid-cols-3 gap-2 text-xs"
-                    style={{ 
-                        opacity: isActive ? 1 : 0.2, 
-                        transform: isActive ? 'translateX(0)' : 'translateX(-20px)', 
-                        transition: 'opacity 0.5s ease-in-out 0.6s, transform 0.5s ease-in-out 0.6s' 
+                    style={{
+                        opacity: isActive ? 1 : 0.2,
+                        transform: isActive ? 'translateX(0)' : 'translateX(-20px)',
+                        transition: 'opacity 0.5s ease-in-out 0.6s, transform 0.5s ease-in-out 0.6s'
                     }}
                 >
                     {[
-                        { 
-                            label: 'Good', 
-                            value: analysis.threshold.good, 
-                            bg: 'bg-green-500/20', 
-                            border: 'border-green-500/30', 
+                        {
+                            label: 'Good',
+                            value: analysis.threshold.good,
+                            bg: 'bg-green-500/20',
+                            border: 'border-green-500/30',
                             textColor: 'text-green-300',
                             valueColor: 'text-green-400'
                         },
-                        { 
-                            label: 'Moderate', 
-                            value: analysis.threshold.moderate, 
-                            bg: 'bg-yellow-500/20', 
-                            border: 'border-yellow-500/30', 
+                        {
+                            label: 'Moderate',
+                            value: analysis.threshold.moderate,
+                            bg: 'bg-yellow-500/20',
+                            border: 'border-yellow-500/30',
                             textColor: 'text-yellow-300',
                             valueColor: 'text-yellow-400'
                         },
-                        { 
-                            label: 'Severe', 
-                            value: analysis.threshold.severe, 
-                            bg: 'bg-red-500/20', 
-                            border: 'border-red-500/30', 
+                        {
+                            label: 'Severe',
+                            value: analysis.threshold.severe,
+                            bg: 'bg-red-500/20',
+                            border: 'border-red-500/30',
                             textColor: 'text-red-300',
                             valueColor: 'text-red-400',
                             isGreaterThan: true
                         }
                     ].map((threshold, index) => (
-                        <div 
+                        <div
                             key={threshold.label}
                             className={`text-center p-2 ${threshold.bg} border ${threshold.border} rounded-lg backdrop-blur-sm`}
                         >
@@ -464,10 +475,10 @@ export const FailureAnalysisCard: React.FC<FailureAnalysisCardProps> = ({
                 <button
                     onClick={onToggleExpand}
                     className="w-full mt-4 px-4 py-2 text-sm font-medium text-primary bg-primary/10 border border-primary/20 rounded-lg hover:bg-primary/20 hover:border-primary/40 transition-all duration-300 backdrop-blur-sm"
-                    style={{ 
-                        opacity: isActive ? 1 : 0.2, 
-                        transform: isActive ? 'translateY(0)' : 'translateY(10px)', 
-                        transition: 'opacity 0.5s ease-in-out 0.8s, transform 0.5s ease-in-out 0.8s, background 0.3s ease-in-out, border 0.3s ease-in-out' 
+                    style={{
+                        opacity: isActive ? 1 : 0.2,
+                        transform: isActive ? 'translateY(0)' : 'translateY(10px)',
+                        transition: 'opacity 0.5s ease-in-out 0.8s, transform 0.5s ease-in-out 0.8s, background 0.3s ease-in-out, border 0.3s ease-in-out'
                     }}
                 >
                     {expanded ? (
@@ -499,7 +510,7 @@ export const MasterHealthDashboard: React.FC<MasterHealthDashboardProps> = ({ he
     };
 
     const { icon: TrendIcon, color: trendColor } = getHealthTrend();
-    
+
     // Use glass card class for consistency
     const glassCardClass = "bg-white/5 dark:bg-zinc-900/10 backdrop-blur-sm border border-primary/20 shadow-lg";
 

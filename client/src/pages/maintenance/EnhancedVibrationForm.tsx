@@ -17,8 +17,9 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/comp
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { FailureAnalysisEngine, VibrationData } from '@/utils/failureAnalysisEngine';
+import { FailureAnalysisEngine, VibrationData, FailureAnalysis } from '@/utils/failureAnalysisEngine';
 import { FailureAnalysisCard, MasterHealthDashboard, SeverityIndicator } from '@/components/analytics/AnalyticsComponents';
+import { EnhancedFailureAnalysisCarousel } from '@/components/analytics/EnhancedFailureAnalysisCarousel';
 import { ReliabilityEngineService } from '@/services/reliabilityEngineService';
 import {
     CalendarIcon,
@@ -30,7 +31,6 @@ import {
     AlertTriangle,
     CheckCircle,
     XCircle,
-    BarChart3,
     Info,
     Plus,
     ChevronRight,
@@ -60,9 +60,6 @@ import {
     RefreshCw,
     X,
     CheckCircle2,
-    PlayCircle,
-    PauseCircle,
-    RotateCcw,
     Wrench,
     ClipboardList,
     Timer,
@@ -78,7 +75,8 @@ import {
     Grid,
     Maximize2,
     Minimize2,
-    MoreVertical
+    MoreVertical,
+    PlayCircle
 } from 'lucide-react';
 import { useAssetContext } from '@/contexts/AssetContext';
 import { useToast } from '@/hooks/use-toast';
@@ -91,6 +89,23 @@ import { MultiEquipmentSelector } from '@/components/maintenance/MultiEquipmentS
 import { MultiEquipmentSpecifications } from '@/components/maintenance/MultiEquipmentSpecifications';
 import { cn } from '@/lib/utils';
 import { getVibrationInputColor, getVibrationTooltip, analyzeVibrationData, ISO10816_THRESHOLDS, getISO10816Zone, calcRMSVelocity } from '@/utils/vibrationUtils';
+import {
+    ThemedAIAssessmentCard,
+    ThemedAIMetricCard,
+    ThemedAIStatusBadge,
+    ThemedAIProgressBar,
+    ThemedAIButton,
+    ThemedAIHeader,
+    ThemedAITabs,
+    ThemedAITabsList,
+    ThemedAITabsTrigger,
+    ThemedAITabsContent,
+    ThemedAIContainer,
+    ThemedAISection,
+    ThemedAIPanel,
+    ThemedAIGrid,
+    ThemedAIChart
+} from '@/components/ui/themed-ai-assessment';
 
 interface EnhancedVibrationFormProps {
     open: boolean;
@@ -155,7 +170,7 @@ const FORM_STEPS = [
     { id: 'equipment', title: 'Equipment Selection', icon: Factory, description: 'Select equipment for vibration monitoring' },
     { id: 'operational', title: 'Operational Data', icon: Gauge, description: 'Enter operational parameters' },
     { id: 'vibration', title: 'Vibration Measurements', icon: Waves, description: 'Record vibration readings' },
-    { id: 'analysis', title: 'Analysis & Review', icon: BarChart3, description: 'Review and analyze data' }
+    { id: 'analysis', title: 'Analysis & Review', icon: BarChart, description: 'Review and analyze data' }
 ];
 
 // Using standardized vibration utilities imported from vibrationUtils.ts
@@ -1050,7 +1065,7 @@ class MaintenancePlanningEngine {
     static readonly OPERATING_HOURS_PER_DAY = 18;
     static readonly OPERATING_DAYS_PER_YEAR = 365;
 
-    static generateMaintenancePlan(aiAssessment: AIConditionAssessment, failureAnalyses: any[], equipmentId: string): MaintenancePlan {
+    static generateMaintenancePlan(aiAssessment: AIConditionAssessment, failureAnalyses: FailureAnalysis[], equipmentId: string): MaintenancePlan {
         const tasks: MaintenanceTask[] = [];
         const currentDate = new Date();
 
@@ -1795,7 +1810,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
     }, [currentStep, selectedEquipment.length]);
 
     // Generate Intelligent Maintenance Plan with Enhanced Failure Analysis Integration
-    const generateMaintenancePlan = useCallback((aiAssessment: AIConditionAssessment, failureAnalyses: any[]) => {
+    const generateMaintenancePlan = useCallback((aiAssessment: AIConditionAssessment, failureAnalyses: FailureAnalysis[]) => {
         if (!selectedEquipment.length || !aiAssessment) return;
 
         const equipmentId = selectedEquipment[0]; // Use primary equipment
@@ -1890,25 +1905,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
         return data;
     };
 
-    const generateRULPredictionData = (aiAssessment: AIConditionAssessment): ChartDataPoint[] => {
-        const rulPrediction = MaintenancePlanningEngine.calculateRULPrediction(aiAssessment);
-        const data: ChartDataPoint[] = [];
 
-        // Generate RUL prediction curve
-        for (let i = 0; i <= rulPrediction.estimatedRUL; i += Math.ceil(rulPrediction.estimatedRUL / 20)) {
-            const date = addDays(new Date(), i);
-            if (isNaN(date.getTime())) continue; // skip invalid dates
-            const remainingLife = Math.max(0, rulPrediction.estimatedRUL - i);
-
-            data.push({
-                x: format(date, 'MMM dd'),
-                y: remainingLife,
-                label: `RUL: ${remainingLife} days`
-            });
-        }
-
-        return data;
-    };
 
     const generateVibrationAnalysisData = (vibrationData: any): ChartDataPoint[] => {
         if (!vibrationData) return [];
@@ -1943,6 +1940,54 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
             y: Math.random() * 100,
             label: `${metric}: ${(Math.random() * 100).toFixed(1)}%`
         }));
+    };
+
+    // Enhanced RUL Prediction Data Generation
+    const generateRULPredictionData = (aiAssessment: AIConditionAssessment): ChartDataPoint[] => {
+        const data: ChartDataPoint[] = [];
+        const currentHealth = aiAssessment.healthScore || 50;
+        const degradationRate = (100 - currentHealth) / 100 * 0.5; // Simulated degradation rate
+
+        // Generate prediction for next 365 days
+        for (let i = 0; i <= 365; i += 7) {
+            const predictedHealth = Math.max(0, currentHealth - (degradationRate * i));
+            const date = new Date();
+            date.setDate(date.getDate() + i);
+
+            data.push({
+                x: date,
+                y: predictedHealth,
+                label: `Day ${i}: ${predictedHealth.toFixed(1)}% health`,
+                color: predictedHealth > 70 ? '#10b981' : predictedHealth > 40 ? '#f59e0b' : '#ef4444'
+            });
+        }
+
+        return data;
+    };
+
+    // Enhanced Anomaly Detection Data Generation
+    const generateAnomalyDetectionData = (aiAssessment: AIConditionAssessment): ChartDataPoint[] => {
+        const data: ChartDataPoint[] = [];
+        const anomalies = aiAssessment.anomalies || [];
+
+        // Generate baseline data with anomalies highlighted
+        for (let i = 0; i < 30; i++) {
+            const date = new Date();
+            date.setDate(date.getDate() - (29 - i));
+
+            const isAnomaly = Math.random() < 0.1; // 10% chance of anomaly
+            const baseValue = 50 + Math.sin(i * 0.2) * 20;
+            const value = isAnomaly ? baseValue + (Math.random() - 0.5) * 40 : baseValue + (Math.random() - 0.5) * 10;
+
+            data.push({
+                x: date,
+                y: Math.max(0, Math.min(100, value)),
+                label: isAnomaly ? `Anomaly detected: ${value.toFixed(1)}` : `Normal: ${value.toFixed(1)}`,
+                color: isAnomaly ? '#ef4444' : '#3b82f6'
+            });
+        }
+
+        return data;
     };
 
     // 1. Add a helper to get failure analyses from vibration data
@@ -2192,7 +2237,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                 nextInspectionDate: aiAssessment?.nextInspectionDate || data.nextInspectionDate || '',
 
                 // Recommendations and notes (enhanced with AI recommendations)
-                recommendations: data.recommendations || (aiAssessment?.recommendations.length > 0
+                recommendations: data.recommendations || (aiAssessment && Array.isArray(aiAssessment.recommendations) && aiAssessment.recommendations.length > 0
                     ? aiAssessment.recommendations.map(rec => `${rec.title}: ${rec.description}`).join('\n\n')
                     : ''),
                 notes: data.notes || '',
@@ -2274,8 +2319,8 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                 calcRMSVelocity(formValues.vibrationData?.motor?.nde || {}),
                 calcRMSVelocity(formValues.vibrationData?.motor?.de || {})
             ],
-            backgroundColor: ['#3b82f6', '#2563eb', '#22c55e', '#16a34a'],
-            borderColor: ['#3b82f6', '#2563eb', '#22c55e', '#16a34a'],
+            backgroundColor: [themeClasses.primary, `${themeClasses.primary}CC`, themeClasses.primary, `${themeClasses.primary}AA`],
+            borderColor: [themeClasses.primary, `${themeClasses.primary}CC`, themeClasses.primary, `${themeClasses.primary}AA`],
             borderWidth: 1
         }]
     };
@@ -2289,8 +2334,8 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                     calcRMSVelocity(formValues.vibrationData?.pump?.nde || {}),
                     calcRMSVelocity(formValues.vibrationData?.pump?.de || {})
                 ],
-                borderColor: '#3b82f6',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderColor: themeClasses.primary,
+                backgroundColor: themeClasses.accent,
                 tension: 0.4
             },
             {
@@ -2299,17 +2344,73 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                     calcRMSVelocity(formValues.vibrationData?.motor?.nde || {}),
                     calcRMSVelocity(formValues.vibrationData?.motor?.de || {})
                 ],
-                borderColor: '#22c55e',
-                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                borderColor: themeClasses.primary,
+                backgroundColor: themeClasses.accent,
                 tension: 0.4
             }
         ]
     };
 
+    // Prepare comprehensive pump-motor system analysis data
+    const pumpAnalysisData: VibrationData = {
+        VH: parseFloat(formValues.vibrationData?.pump?.nde?.velH || '0'),
+        VV: parseFloat(formValues.vibrationData?.pump?.nde?.velV || '0'),
+        VA: parseFloat(formValues.vibrationData?.pump?.nde?.velAxl || '0'),
+        AH: parseFloat(formValues.vibrationData?.pump?.nde?.accH || '0'),
+        AV: parseFloat(formValues.vibrationData?.pump?.nde?.accV || '0'),
+        AA: parseFloat(formValues.vibrationData?.pump?.nde?.accAxl || '0'),
+        f: 50,
+        N: 1450,
+        temp: parseFloat(formValues.vibrationData?.pump?.nde?.temp || '0')
+    };
+    const motorAnalysisData: VibrationData = {
+        VH: parseFloat(formValues.vibrationData?.motor?.nde?.velH || '0'),
+        VV: parseFloat(formValues.vibrationData?.motor?.nde?.velV || '0'),
+        VA: parseFloat(formValues.vibrationData?.motor?.nde?.velAxl || '0'),
+        AH: parseFloat(formValues.vibrationData?.motor?.nde?.accH || '0'),
+        AV: parseFloat(formValues.vibrationData?.motor?.nde?.accV || '0'),
+        AA: parseFloat(formValues.vibrationData?.motor?.nde?.accAxl || '0'),
+        f: 50,
+        N: 1450,
+        temp: parseFloat(formValues.vibrationData?.motor?.nde?.temp || '0')
+    };
+    const systemAnalysisData: VibrationData = {
+        VH: (pumpAnalysisData.VH + motorAnalysisData.VH) / 2,
+        VV: (pumpAnalysisData.VV + motorAnalysisData.VV) / 2,
+        VA: (pumpAnalysisData.VA + motorAnalysisData.VA) / 2,
+        AH: (pumpAnalysisData.AH + motorAnalysisData.AH) / 2,
+        AV: (pumpAnalysisData.AV + motorAnalysisData.AV) / 2,
+        AA: (pumpAnalysisData.AA + motorAnalysisData.AA) / 2,
+        f: 50,
+        N: 1450,
+        temp: Math.max(pumpAnalysisData.temp || 0, motorAnalysisData.temp || 0)
+    };
+    const pumpAnalyses = useMemo(() => FailureAnalysisEngine.performComprehensiveAnalysis(pumpAnalysisData), [JSON.stringify(pumpAnalysisData)]);
+    const motorAnalyses = useMemo(() => FailureAnalysisEngine.performComprehensiveAnalysis(motorAnalysisData), [JSON.stringify(motorAnalysisData)]);
+    const systemAnalyses = useMemo(() => FailureAnalysisEngine.performComprehensiveAnalysis(systemAnalysisData), [JSON.stringify(systemAnalysisData)]);
+    const combinedAnalyses = useMemo(() => [
+        ...pumpAnalyses.map(analysis => ({
+            ...analysis,
+            type: `Pump ${analysis.type}`,
+            description: `Pump: ${analysis.description}`
+        })),
+        ...motorAnalyses.map(analysis => ({
+            ...analysis,
+            type: `Motor ${analysis.type}`,
+            description: `Motor: ${analysis.description}`
+        })),
+        ...systemAnalyses.map(analysis => ({
+            ...analysis,
+            type: `System ${analysis.type}`,
+            description: `Combined System: ${analysis.description}`
+        }))
+    ], [pumpAnalyses, motorAnalyses, systemAnalyses]);
+    const masterHealth = useMemo(() => FailureAnalysisEngine.calculateMasterHealthAssessment(combinedAnalyses), [combinedAnalyses]);
+
     return (
         <Dialog open={open} onOpenChange={onClose}>
             <DialogContent className="w-screen h-screen max-w-none max-h-none flex flex-col p-0 m-0 rounded-none border-0">
-                <DialogHeader className="px-6 py-4 border-b">
+                <DialogHeader className="px-6 py-2 border-b">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="p-2 rounded-lg bg-primary/10">
@@ -2455,7 +2556,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
 
                 {/* Step Navigation - Only show when not in add mode */}
                 {!addMode && (
-                    <div className="px-6 py-3 border-b bg-muted/30">
+                    <div className="px-6 py-2 border-b bg-muted/30">
                         <div className="flex items-center justify-between">
                             {FORM_STEPS.map((step, index) => {
                                 const StepIcon = step.icon;
@@ -2464,7 +2565,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
 
                                 return (
                                     <div key={step.id} className="flex items-center">
-                                        <div className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${isActive
+                                        <div className={`flex items-center gap-2 px-3 py-1 rounded-lg transition-all ${isActive
                                             ? 'bg-primary text-primary-foreground'
                                             : isCompleted
                                                 ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400'
@@ -2502,7 +2603,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                 {/* Selected Equipment Summary */}
                                 {selectedEquipment.length > 0 && (
                                     <Card className="mt-6">
-                                        <CardHeader>
+                                        <CardHeader className="pb-3 pt-4 px-4">
                                             <CardTitle className="flex items-center gap-2">
                                                 <CheckCircle className="h-5 w-5 text-green-600" />
                                                 Selected Equipment Summary ({selectedEquipment.length})
@@ -2544,7 +2645,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                     {/* Measurement Information */}
                                     <Card>
-                                        <CardHeader>
+                                        <CardHeader className="pb-3 pt-4 px-4">
                                             <CardTitle className="flex items-center gap-2 text-base">
                                                 <CalendarIcon className="h-4 w-4" />
                                                 Measurement Information
@@ -2624,7 +2725,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
 
                                     {/* Operating Conditions */}
                                     <Card>
-                                        <CardHeader>
+                                        <CardHeader className="pb-3 pt-4 px-4">
                                             <CardTitle className="flex items-center gap-2 text-base">
                                                 <Gauge className="h-4 w-4" />
                                                 Operating Conditions
@@ -2718,7 +2819,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
 
                                     {/* Process Parameters */}
                                     <Card>
-                                        <CardHeader>
+                                        <CardHeader className="pb-3 pt-4 px-4">
                                             <CardTitle className="flex items-center gap-2 text-base">
                                                 <Activity className="h-4 w-4" />
                                                 Process Parameters
@@ -2792,7 +2893,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
 
                                     {/* Environmental Conditions */}
                                     <Card>
-                                        <CardHeader>
+                                        <CardHeader className="pb-3 pt-4 px-4">
                                             <CardTitle className="flex items-center gap-2 text-base">
                                                 <Thermometer className="h-4 w-4" />
                                                 Environmental Conditions
@@ -2859,7 +2960,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
 
                                 {/* ISO 10816 Guidelines */}
                                 <Card className="bg-card">
-                                    <CardHeader>
+                                    <CardHeader className="pb-3 pt-4 px-4">
                                         <CardTitle className="flex items-center gap-2 text-base">
                                             <Shield className="h-4 w-4" />
                                             ISO 10816 Vibration Guidelines
@@ -2868,15 +2969,15 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                     <CardContent>
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                             <div className="flex items-center gap-2">
-                                                <div className="w-4 h-4 bg-green-500 rounded"></div>
+                                                <div className="w-4 h-4 rounded" style={{ backgroundColor: 'hsl(142, 76%, 36%)' }}></div>
                                                 <span className="text-sm">Good: &lt; {firstEquipment?.categoryInfo?.vibrationLimits?.good || 2.8} mm/s</span>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <div className="w-4 h-4 bg-yellow-500 rounded"></div>
+                                                <div className="w-4 h-4 rounded" style={{ backgroundColor: 'hsl(45, 93%, 47%)' }}></div>
                                                 <span className="text-sm">Acceptable: &lt; {firstEquipment?.categoryInfo?.vibrationLimits?.acceptable || 7.1} mm/s</span>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <div className="w-4 h-4 bg-red-500 rounded"></div>
+                                                <div className="w-4 h-4 rounded" style={{ backgroundColor: 'hsl(0, 84%, 60%)' }}></div>
                                                 <span className="text-sm">Unacceptable: &gt; {firstEquipment?.categoryInfo?.vibrationLimits?.unacceptable || 18.0} mm/s</span>
                                             </div>
                                         </div>
@@ -2902,7 +3003,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                             {/* Non-Drive End */}
                                             <Card>
-                                                <CardHeader>
+                                                <CardHeader className="pb-3 pt-4 px-4">
                                                     <CardTitle className="flex items-center gap-2">
                                                         <Cpu className="h-4 w-4 text-primary" />
                                                         Pump - Non-Drive End (NDE)
@@ -3044,7 +3145,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
 
                                             {/* Drive End */}
                                             <Card>
-                                                <CardHeader>
+                                                <CardHeader className="pb-3 pt-4 px-4">
                                                     <CardTitle className="flex items-center gap-2">
                                                         <Cpu className="h-4 w-4 text-primary" />
                                                         Pump - Drive End (DE)
@@ -3441,7 +3542,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                             {/* Non-Drive End */}
                                             <Card>
-                                                <CardHeader>
+                                                <CardHeader className="pb-3 pt-4 px-4">
                                                     <CardTitle className="flex items-center gap-2">
                                                         <Zap className="h-4 w-4 text-green-500" />
                                                         Motor - Non-Drive End (NDE)
@@ -3583,7 +3684,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
 
                                             {/* Drive End */}
                                             <Card>
-                                                <CardHeader>
+                                                <CardHeader className="pb-3 pt-4 px-4">
                                                     <CardTitle className="flex items-center gap-2">
                                                         <Zap className="h-4 w-4 text-primary" />
                                                         Motor - Drive End (DE)
@@ -3995,16 +4096,32 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                         // Check if we have valid vibration data before showing analytics
                                         const hasValidData = hasValidVibrationData(vibrationData);
 
+                                        // Integrate with AI Assessment if available (using masterHealth from component level)
+                                        const integratedHealthScore = aiAssessment ?
+                                            (masterHealth.overallHealthScore + aiAssessment.healthScore) / 2 :
+                                            masterHealth.overallHealthScore;
+
+                                        const enhancedMasterHealth = {
+                                            ...masterHealth,
+                                            overallHealthScore: integratedHealthScore,
+                                            recommendations: [
+                                                ...masterHealth.recommendations
+                                            ]
+                                        };
+
                                         // If no valid vibration data, show placeholder messages
                                         if (!hasValidData) {
                                             return (
                                                 <div className="space-y-6">
                                                     {/* Main Placeholder Card */}
-                                                    <Card className="bg-gradient-to-r from-background/80 to-muted/50 border-border dark:border-border">
-                                                        <CardHeader className="text-center">
+                                                    <Card
+                                                        className="border-border dark:border-border"
+                                                        style={{ background: 'hsl(var(--card))' }}
+                                                    >
+                                                        <CardHeader className="text-center pb-3 pt-4 px-4">
                                                             <CardTitle className="flex flex-col items-center gap-4">
                                                                 <div className="p-4 bg-primary rounded-full shadow-lg">
-                                                                    <BarChart3 className="h-8 w-8 text-primary-foreground" />
+                                                                    <BarChart className="h-8 w-8 text-primary-foreground" />
                                                                 </div>
                                                                 <div>
                                                                     <h3 className="text-2xl font-bold text-foreground">Analytics Ready</h3>
@@ -4053,7 +4170,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
 
                                                                 <div className="p-4 bg-card rounded-lg shadow-sm border-l-4 border-amber-500/60">
                                                                     <div className="flex items-center gap-3 mb-2">
-                                                                        <BarChart3 className="h-5 w-5 text-amber-500" />
+                                                                        <BarChart className="h-5 w-5 text-amber-500" />
                                                                         <span className="font-semibold text-foreground">Reliability Metrics</span>
                                                                     </div>
                                                                     <p className="text-sm text-muted-foreground">
@@ -4093,120 +4210,24 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                             );
                                         }
 
-                                        // Prepare comprehensive pump-motor system analysis data
-                                        const pumpAnalysisData: VibrationData = {
-                                            // Pump NDE data (primary analysis point)
-                                            VH: parseFloat(vibrationData?.pump?.nde?.velH || '0'),
-                                            VV: parseFloat(vibrationData?.pump?.nde?.velV || '0'),
-                                            VA: parseFloat(vibrationData?.pump?.nde?.velAxl || '0'),
-                                            AH: parseFloat(vibrationData?.pump?.nde?.accH || '0'),
-                                            AV: parseFloat(vibrationData?.pump?.nde?.accV || '0'),
-                                            AA: parseFloat(vibrationData?.pump?.nde?.accAxl || '0'),
-                                            f: 50, // Default frequency (Hz)
-                                            N: 1450, // Default RPM
-                                            temp: parseFloat(vibrationData?.pump?.nde?.temp || '0')
-                                        };
-
-                                        const motorAnalysisData: VibrationData = {
-                                            // Motor NDE data (secondary analysis point)
-                                            VH: parseFloat(vibrationData?.motor?.nde?.velH || '0'),
-                                            VV: parseFloat(vibrationData?.motor?.nde?.velV || '0'),
-                                            VA: parseFloat(vibrationData?.motor?.nde?.velAxl || '0'),
-                                            AH: parseFloat(vibrationData?.motor?.nde?.accH || '0'),
-                                            AV: parseFloat(vibrationData?.motor?.nde?.accV || '0'),
-                                            AA: parseFloat(vibrationData?.motor?.nde?.accAxl || '0'),
-                                            f: 50, // Default frequency (Hz)
-                                            N: 1450, // Default RPM
-                                            temp: parseFloat(vibrationData?.motor?.nde?.temp || '0')
-                                        };
-
-                                        // Combined system analysis (average critical parameters)
-                                        const systemAnalysisData: VibrationData = {
-                                            VH: (pumpAnalysisData.VH + motorAnalysisData.VH) / 2,
-                                            VV: (pumpAnalysisData.VV + motorAnalysisData.VV) / 2,
-                                            VA: (pumpAnalysisData.VA + motorAnalysisData.VA) / 2,
-                                            AH: (pumpAnalysisData.AH + motorAnalysisData.AH) / 2,
-                                            AV: (pumpAnalysisData.AV + motorAnalysisData.AV) / 2,
-                                            AA: (pumpAnalysisData.AA + motorAnalysisData.AA) / 2,
-                                            f: 50,
-                                            N: 1450,
-                                            temp: Math.max(pumpAnalysisData.temp || 0, motorAnalysisData.temp || 0)
-                                        };
-
-                                        // Perform comprehensive failure analysis on pump-motor system
-                                        const pumpAnalyses = FailureAnalysisEngine.performComprehensiveAnalysis(pumpAnalysisData);
-                                        const motorAnalyses = FailureAnalysisEngine.performComprehensiveAnalysis(motorAnalysisData);
-                                        const systemAnalyses = FailureAnalysisEngine.performComprehensiveAnalysis(systemAnalysisData);
-
-                                        // Combine analyses with equipment-specific labeling
-                                        let combinedAnalyses = [
-                                            ...pumpAnalyses.map(analysis => ({
-                                                ...analysis,
-                                                type: `Pump ${analysis.type}`,
-                                                description: `Pump: ${analysis.description}`
-                                            })),
-                                            ...motorAnalyses.map(analysis => ({
-                                                ...analysis,
-                                                type: `Motor ${analysis.type}`,
-                                                description: `Motor: ${analysis.description}`
-                                            })),
-                                            ...systemAnalyses.map(analysis => ({
-                                                ...analysis,
-                                                type: `System ${analysis.type}`,
-                                                description: `Combined System: ${analysis.description}`
-                                            }))
-                                        ];
-
-                                        // Calculate master health assessment for complete pump-motor system
-                                        const masterHealth = FailureAnalysisEngine.calculateMasterHealthAssessment(combinedAnalyses);
-
-                                        // Integrate with AI Assessment if available
-                                        const integratedHealthScore = aiAssessment ?
-                                            (masterHealth.overallHealthScore + aiAssessment.healthScore) / 2 :
-                                            masterHealth.overallHealthScore;
-
-                                        const enhancedMasterHealth = {
-                                            ...masterHealth,
-                                            overallHealthScore: integratedHealthScore,
-                                            recommendations: [
-                                                ...masterHealth.recommendations
-                                            ]
-                                        };
-
                                         return (
                                             <>
                                                 {/* All AI components consolidated into unified AI Assessment Center below */}
 
-                                                {/* Failure Analysis Grid */}
-                                                <div className="space-y-4">
-                                                    <div className="flex items-center justify-between">
-                                                        <h3 className="text-xl font-bold text-gray-900">Comprehensive Pump-Motor System Analysis</h3>
-                                                        <Badge variant="outline" className="text-sm">
-                                                            {combinedAnalyses.length} Analysis Types
-                                                        </Badge>
-                                                    </div>
-                                                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                                                        {combinedAnalyses.map((analysis) => (
-                                                            <FailureAnalysisCard
-                                                                key={analysis.type}
-                                                                analysis={analysis}
-                                                                expanded={expandedCards.has(analysis.type)}
-                                                                onToggleExpand={() => toggleCardExpansion(analysis.type)}
-                                                                // Ensure severity, color, and progress are passed from engine
-                                                                severity={analysis.severity}
-                                                                color={analysis.color}
-                                                                progress={analysis.progress}
-                                                            />
-                                                        ))}
-                                                    </div>
-                                                </div>
+                                                {/* Enhanced Failure Analysis Carousel */}
+                                                <EnhancedFailureAnalysisCarousel
+                                                    analyses={combinedAnalyses}
+                                                    autoRotationInterval={6000}
+                                                    showControls={true}
+                                                    className="mb-4"
+                                                />
 
-                                                
+
                                                 {/* Advanced Technical & Statistical Charts */}
                                                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                                                     {/* Vibration Analysis Charts */}
                                                     <Card className="bg-card">
-                                                        <CardHeader>
+                                                        <CardHeader className="pb-3 pt-4 px-4">
                                                             <CardTitle className="flex items-center gap-2 text-lg">
                                                                 <TrendingUp className="h-5 w-5 text-primary" />
                                                                 Advanced Vibration Analysis
@@ -4269,9 +4290,9 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
 
                                                     {/* Reliability Engineering Charts */}
                                                     <Card className="bg-card">
-                                                        <CardHeader>
+                                                        <CardHeader className="pb-3 pt-4 px-4">
                                                             <CardTitle className="flex items-center gap-2 text-lg">
-                                                                <BarChart3 className="h-5 w-5 text-purple-500" />
+                                                                <BarChart className="h-5 w-5 text-purple-500" />
                                                                 Reliability Engineering Analysis
                                                                 <Badge variant="outline" className="ml-2">OREDA/NSWC-10</Badge>
                                                             </CardTitle>
@@ -4296,8 +4317,8 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                                                     const eta = reliabilityData.weibull_analysis.eta;
                                                                                     return Math.exp(-Math.pow(time / eta, beta)) * 100;
                                                                                 }),
-                                                                                borderColor: 'rgb(147, 51, 234)',
-                                                                                backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                                                                                borderColor: themeClasses.primary,
+                                                                                backgroundColor: themeClasses.accent,
                                                                                 fill: true
                                                                             }]
                                                                         }}
@@ -4326,8 +4347,8 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                                                     const eta = reliabilityData.weibull_analysis.eta;
                                                                                     return (beta / eta) * Math.pow(time / eta, beta - 1) * 1000;
                                                                                 }),
-                                                                                borderColor: 'rgb(239, 68, 68)',
-                                                                                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                                                                borderColor: themeClasses.primary,
+                                                                                backgroundColor: themeClasses.accent,
                                                                                 fill: true
                                                                             }]
                                                                         }}
@@ -4344,7 +4365,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                                 </>
                                                             ) : (
                                                                 <div className="text-center py-8">
-                                                                    <BarChart3 className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                                                                    <BarChart className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                                                                     <p className="text-muted-foreground mb-2">Reliability Analysis Ready</p>
                                                                     <p className="text-sm text-muted-foreground">
                                                                         Enter vibration data to generate Weibull analysis
@@ -4356,8 +4377,11 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                 </div>
 
                                                 {/* Statistical Analysis Dashboard */}
-                                                <Card className="bg-gradient-to-r from-background/90 to-muted/60 border-border dark:border-border">
-                                                    <CardHeader>
+                                                <Card
+                                                    className="border-border dark:border-border"
+                                                    style={{ background: 'hsl(var(--card))' }}
+                                                >
+                                                    <CardHeader className="pb-3 pt-4 px-4">
                                                         <CardTitle className="flex items-center gap-3">
                                                             <div className="p-2 bg-emerald-500 rounded-lg">
                                                                 <TrendingUp className="h-5 w-5 text-white" />
@@ -4480,9 +4504,9 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                                         {/* Equipment Summary */}
                                         <Card className="border-border dark:border-border">
-                                            <CardHeader className="bg-muted/30 rounded-t-lg">
+                                            <CardHeader className="bg-muted/30 rounded-t-lg pb-2 pt-3 px-4">
                                                 <CardTitle className="flex items-center gap-2 text-foreground">
-                                                    <BarChart3 className="h-4 w-4 text-primary" />
+                                                    <BarChart className="h-4 w-4 text-primary" />
                                                     Equipment Summary
                                                 </CardTitle>
                                             </CardHeader>
@@ -4526,7 +4550,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
 
                                         {/* Vibration Analysis */}
                                         <Card className="border-border dark:border-border">
-                                            <CardHeader className="bg-muted/30 rounded-t-lg">
+                                            <CardHeader className="bg-muted/30 rounded-t-lg pb-2 pt-3 px-4">
                                                 <CardTitle className="flex items-center gap-2 text-foreground">
                                                     <Waves className="h-4 w-4 text-blue-500" />
                                                     Vibration Analysis
@@ -4576,381 +4600,575 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                     </div>
 
                                     {/* 🚀 ENHANCED AI ASSESSMENT CENTER - Professional UI/UX with Intelligent Features - Full Width */}
-                                    <Card className="relative overflow-hidden border border-border dark:border-border shadow-2xl bg-gradient-to-br from-background/90 via-muted/50 to-background/90 w-full">
-                                        {/* Animated Background Pattern */}
-                                        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5"></div>
-                                        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-500"></div>
-
-                                        <CardHeader className="relative bg-gradient-to-br from-background to-muted/80 dark:from-background dark:to-muted/60 border-b border-border">
-                                            {/* Floating Particles Effect */}
-                                            <div className="absolute inset-0 overflow-hidden">
-                                                <div className="absolute top-4 left-4 w-2 h-2 bg-primary/60 rounded-full animate-pulse"></div>
-                                                <div className="absolute top-8 right-8 w-1 h-1 bg-primary/40 rounded-full animate-ping"></div>
-                                                <div className="absolute bottom-6 left-1/3 w-1.5 h-1.5 bg-primary/50 rounded-full animate-bounce"></div>
-                                            </div>
-
-                                            <CardTitle className="relative flex items-center gap-4">
-                                                <div className="relative">
-                                                    <div className="absolute inset-0 bg-primary/20 rounded-xl blur-lg opacity-75 animate-pulse"></div>
-                                                    <div className="relative p-3 bg-primary rounded-xl shadow-lg">
-                                                        <Brain className="h-8 w-8 text-primary-foreground" />
-                                                    </div>
-                                                </div>
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-3">
-                                                        <h2 className="text-2xl font-bold text-foreground">
-                                                            AI Assessment Center
-                                                        </h2>
-                                                        <Sparkles className="h-5 w-5 text-amber-500 animate-pulse" />
-                                                    </div>
-                                                    <p className="text-sm text-muted-foreground mt-1 font-medium">
-                                                        Intelligent Maintenance Planning • Advanced Analytics • Real-time Assessment
-                                                    </p>
-                                                </div>
-
-                                                {/* Status Indicators */}
-                                                <div className="flex items-center gap-3">
-                                                    {isAssessing && (
-                                                        <div className="flex items-center gap-2 px-3 py-1 bg-primary/20 rounded-full border border-primary/30">
-                                                            <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-                                                            <span className="text-sm font-medium text-foreground">Analyzing...</span>
-                                                        </div>
-                                                    )}
-                                                    {lastAssessmentTime && !isAssessing && (
-                                                        <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-400/30 hover:bg-emerald-500/30">
-                                                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                                                            Updated: {format(lastAssessmentTime, 'HH:mm:ss')}
-                                                        </Badge>
-                                                    )}
-                                                </div>
-                                            </CardTitle>
-
-                                            {/* Enhanced Control Panel */}
-                                            <div className="flex items-center justify-between mt-6 p-4 bg-muted/20 rounded-xl backdrop-blur-sm border border-border">
-                                                <div className="flex items-center gap-3">
-                                                    <Button
-                                                        type="button"
-                                                        variant="secondary"
+                                    <ThemedAIAssessmentCard variant="hero" className="w-full">
+                                        <ThemedAIHeader
+                                            title="AI Assessment Center"
+                                            subtitle="Intelligent Maintenance Planning • Advanced Analytics • Real-time Assessment"
+                                            status={{
+                                                type: isAssessing ? 'analyzing' : lastAssessmentTime ? 'updated' : 'ready',
+                                                timestamp: lastAssessmentTime || undefined
+                                            }}
+                                            actions={
+                                                <>
+                                                    <ThemedAIButton
+                                                        variant="action"
                                                         size="sm"
+                                                        loading={isAssessing}
                                                         onClick={performAIAssessment}
                                                         disabled={isAssessing || selectedEquipment.length === 0}
-                                                        className="bg-primary hover:bg-primary/90 text-primary-foreground border-0 shadow-lg transition-all duration-300 transform hover:scale-105"
                                                     >
-                                                        <RefreshCw className={`h-4 w-4 mr-2 ${isAssessing ? 'animate-spin' : ''}`} />
                                                         {isAssessing ? 'Analyzing...' : 'Run AI Assessment'}
-                                                    </Button>
+                                                    </ThemedAIButton>
 
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
+                                                    <ThemedAIButton
+                                                        variant="secondary"
                                                         size="sm"
+                                                        icon={<BarChart className="h-4 w-4" />}
                                                         onClick={() => setShowChartsPanel(!showChartsPanel)}
-                                                        className="bg-muted/20 hover:bg-muted/30 text-foreground border-border transition-all duration-300"
                                                     >
-                                                        <BarChart className="h-4 w-4 mr-2" />
                                                         Advanced Charts
-                                                    </Button>
+                                                    </ThemedAIButton>
 
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
+                                                    <ThemedAIButton
+                                                        variant="secondary"
                                                         size="sm"
+                                                        icon={<Wrench className="h-4 w-4" />}
                                                         onClick={() => setShowMaintenancePlanner(!showMaintenancePlanner)}
-                                                        className="bg-muted/20 hover:bg-muted/30 text-foreground border-border transition-all duration-300"
                                                     >
-                                                        <Wrench className="h-4 w-4 mr-2" />
                                                         Maintenance Planner
-                                                    </Button>
-                                                </div>
-
-                                                <div className="flex items-center gap-2 text-xs text-blue-200">
-                                                    <Lightning className="h-4 w-4" />
-                                                    <span>Powered by Advanced AI • 18hr/day Operation Optimized</span>
-                                                </div>
-                                            </div>
-                                        </CardHeader>
-                                        <CardContent className="relative p-0 bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30">
+                                                    </ThemedAIButton>
+                                                </>
+                                            }
+                                        />
+                                        <CardContent className="relative p-0" style={{ background: 'hsl(var(--background))' }}>
                                             {aiAssessment ? (
-                                                <Tabs defaultValue="dashboard" className="w-full">
+                                                <ThemedAITabs defaultValue="dashboard" variant="modern">
                                                     {/* Enhanced Modern Tab Navigation */}
                                                     <div className="relative p-6 pb-0">
-                                                        <TabsList className="grid w-full grid-cols-7 bg-gradient-to-r from-slate-100 via-blue-100 to-purple-100 p-1 rounded-xl shadow-inner border border-slate-200/50">
-                                                            <TabsTrigger
+                                                        <ThemedAITabsList variant="modern" columns={7}>
+                                                            <ThemedAITabsTrigger
                                                                 value="dashboard"
-                                                                className="relative data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-lg"
+                                                                variant="modern"
+                                                                icon={<Brain className="h-4 w-4" />}
                                                             >
-                                                                <div className="flex items-center gap-2">
-                                                                    <Brain className="h-4 w-4" />
-                                                                    <span className="hidden sm:inline">Dashboard</span>
-                                                                </div>
-                                                            </TabsTrigger>
-                                                            <TabsTrigger
+                                                                <span className="hidden sm:inline">Dashboard</span>
+                                                            </ThemedAITabsTrigger>
+                                                            <ThemedAITabsTrigger
                                                                 value="insights"
-                                                                className="relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-300 rounded-lg hover:bg-muted/50"
+                                                                variant="modern"
+                                                                icon={<Lightbulb className="h-4 w-4" />}
                                                             >
-                                                                <div className="flex items-center gap-2">
-                                                                    <Lightbulb className="h-4 w-4" />
-                                                                    <span className="hidden sm:inline">Insights</span>
-                                                                    {aiAssessment.insights.length > 0 && (
-                                                                        <Badge variant="secondary" className="ml-1 text-xs bg-secondary text-secondary-foreground animate-pulse">
-                                                                            {aiAssessment.insights.length}
-                                                                        </Badge>
-                                                                    )}
-                                                                </div>
-                                                            </TabsTrigger>
-                                                            <TabsTrigger
+                                                                <span className="hidden sm:inline">Insights</span>
+                                                                {aiAssessment.insights.length > 0 && (
+                                                                    <Badge variant="secondary" className="ml-1 text-xs bg-secondary text-secondary-foreground animate-pulse">
+                                                                        {aiAssessment.insights.length}
+                                                                    </Badge>
+                                                                )}
+                                                            </ThemedAITabsTrigger>
+                                                            <ThemedAITabsTrigger
                                                                 value="recommendations"
-                                                                className="relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-300 rounded-lg hover:bg-muted/50"
+                                                                variant="modern"
+                                                                icon={<Target className="h-4 w-4" />}
                                                             >
-                                                                <div className="flex items-center gap-2">
-                                                                    <Target className="h-4 w-4" />
-                                                                    <span className="hidden sm:inline">Actions</span>
-                                                                    {aiAssessment.recommendations.length > 0 && (
-                                                                        <Badge variant="secondary" className="ml-1 text-xs bg-secondary text-secondary-foreground animate-pulse">
-                                                                            {aiAssessment.recommendations.length}
-                                                                        </Badge>
-                                                                    )}
-                                                                </div>
-                                                            </TabsTrigger>
-                                                            <TabsTrigger
+                                                                <span className="hidden sm:inline">Actions</span>
+                                                                {aiAssessment.recommendations.length > 0 && (
+                                                                    <Badge variant="secondary" className="ml-1 text-xs bg-secondary text-secondary-foreground animate-pulse">
+                                                                        {aiAssessment.recommendations.length}
+                                                                    </Badge>
+                                                                )}
+                                                            </ThemedAITabsTrigger>
+                                                            <ThemedAITabsTrigger
                                                                 value="trends"
-                                                                className="relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-300 rounded-lg hover:bg-muted/50"
+                                                                variant="modern"
+                                                                icon={<TrendUp className="h-4 w-4" />}
                                                             >
-                                                                <div className="flex items-center gap-2">
-                                                                    <TrendUp className="h-4 w-4" />
-                                                                    <span className="hidden sm:inline">Trends</span>
-                                                                    {aiAssessment.trends.length > 0 && (
-                                                                        <Badge variant="secondary" className="ml-1 text-xs bg-secondary text-secondary-foreground animate-pulse">
-                                                                            {aiAssessment.trends.length}
-                                                                        </Badge>
-                                                                    )}
-                                                                </div>
-                                                            </TabsTrigger>
-                                                            <TabsTrigger
+                                                                <span className="hidden sm:inline">Trends</span>
+                                                                {aiAssessment.trends.length > 0 && (
+                                                                    <Badge variant="secondary" className="ml-1 text-xs bg-secondary text-secondary-foreground animate-pulse">
+                                                                        {aiAssessment.trends.length}
+                                                                    </Badge>
+                                                                )}
+                                                            </ThemedAITabsTrigger>
+                                                            <ThemedAITabsTrigger
                                                                 value="maintenance"
-                                                                className="relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-300 rounded-lg hover:bg-muted/50"
+                                                                variant="modern"
+                                                                icon={<Wrench className="h-4 w-4" />}
                                                             >
-                                                                <div className="flex items-center gap-2">
-                                                                    <Wrench className="h-4 w-4" />
-                                                                    <span className="hidden sm:inline">Planning</span>
-                                                                    {maintenancePlan && (
-                                                                        <Badge variant="secondary" className="ml-1 text-xs bg-secondary text-secondary-foreground animate-pulse">
-                                                                            {maintenancePlan.tasks.length}
-                                                                        </Badge>
-                                                                    )}
-                                                                </div>
-                                                            </TabsTrigger>
-                                                            <TabsTrigger
+                                                                <span className="hidden sm:inline">Planning</span>
+                                                                {maintenancePlan && (
+                                                                    <Badge variant="secondary" className="ml-1 text-xs bg-secondary text-secondary-foreground animate-pulse">
+                                                                        {maintenancePlan.tasks.length}
+                                                                    </Badge>
+                                                                )}
+                                                            </ThemedAITabsTrigger>
+                                                            <ThemedAITabsTrigger
                                                                 value="charts"
-                                                                className="relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-300 rounded-lg hover:bg-muted/50"
+                                                                variant="modern"
+                                                                icon={<BarChart className="h-4 w-4" />}
                                                             >
-                                                                <div className="flex items-center gap-2">
-                                                                    <BarChart className="h-4 w-4" />
-                                                                    <span className="hidden sm:inline">Analytics</span>
-                                                                    {chartConfigs.length > 0 && (
-                                                                        <Badge variant="secondary" className="ml-1 text-xs bg-secondary text-secondary-foreground animate-pulse">
-                                                                            {chartConfigs.length}
-                                                                        </Badge>
-                                                                    )}
-                                                                </div>
-                                                            </TabsTrigger>
-                                                            <TabsTrigger
+                                                                <span className="hidden sm:inline">Analytics</span>
+                                                                {chartConfigs.length > 0 && (
+                                                                    <Badge variant="secondary" className="ml-1 text-xs bg-secondary text-secondary-foreground animate-pulse">
+                                                                        {chartConfigs.length}
+                                                                    </Badge>
+                                                                )}
+                                                            </ThemedAITabsTrigger>
+                                                            <ThemedAITabsTrigger
                                                                 value="health"
-                                                                className="relative data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg transition-all duration-300 rounded-lg hover:bg-muted/50"
+                                                                variant="modern"
+                                                                icon={<Activity className="h-4 w-4" />}
                                                             >
-                                                                <div className="flex items-center gap-2">
-                                                                    <Activity className="h-4 w-4" />
-                                                                    <span className="hidden sm:inline">Health</span>
-                                                                </div>
-                                                            </TabsTrigger>
-                                                        </TabsList>
+                                                                <span className="hidden sm:inline">Health</span>
+                                                            </ThemedAITabsTrigger>
+                                                        </ThemedAITabsList>
                                                     </div>
 
                                                     {/* 🎯 ENHANCED AI DASHBOARD - Modern Professional Overview */}
-                                                    <TabsContent value="dashboard" className="p-6 space-y-8">
-                                                        {/* Hero Metrics Section */}
+                                                    <ThemedAITabsContent value="dashboard" className="p-6 space-y-8" variant="glass">
+                                                        {/* Hero Metrics Section - Enhanced with Status-Aware Design */}
                                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                                            {/* Health Score Card */}
-                                                            <div className="group relative overflow-hidden bg-gradient-to-br from-emerald-500/90 via-green-500/90 to-teal-600/90 dark:from-emerald-600/90 dark:via-green-600/90 dark:to-teal-700/90 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 border border-emerald-400/20 dark:border-emerald-600/30">
-                                                                <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
-                                                                <div className="absolute bottom-0 left-0 w-16 h-16 bg-white/5 rounded-full -ml-8 -mb-8"></div>
-                                                                <div className="relative">
-                                                                    <div className="flex items-center justify-between mb-4">
-                                                                        <Activity className="h-8 w-8 text-white/80" />
-                                                                        <div className="text-right">
-                                                                            <div className="text-3xl font-bold">
-                                                                                {aiAssessment.healthScore !== undefined ? aiAssessment.healthScore : 'N/A'}
-                                                                                <span className="text-lg opacity-75">/100</span>
-                                                                            </div>
-                                                                            <div className="text-sm opacity-90">Health Score</div>
+                                                            {/* Health Score Card - Enhanced with Dynamic Status */}
+                                                            <ThemedAIMetricCard
+                                                                title="Health Score"
+                                                                value={aiAssessment.healthScore !== undefined ? aiAssessment.healthScore : 'N/A'}
+                                                                subtitle={`${aiAssessment.confidence}% confidence • ${aiAssessment.overallCondition.toUpperCase()}`}
+                                                                icon={<Activity className="h-8 w-8" />}
+                                                                variant="health"
+                                                                progress={aiAssessment.healthScore}
+                                                                confidence={aiAssessment.confidence}
+                                                                status={aiAssessment.overallCondition as any}
+                                                                objective="monitoring"
+                                                                animated={true}
+                                                                showStatusIndicator={true}
+                                                                className="group relative overflow-hidden"
+                                                            />
+
+                                                            {/* Condition Card - Enhanced with Status Indicators */}
+                                                            <ThemedAIMetricCard
+                                                                title="Equipment Condition"
+                                                                value={aiAssessment.overallCondition}
+                                                                subtitle={`${aiAssessment.insights.filter(i => i.type === 'critical').length} critical issues detected`}
+                                                                icon={<Shield className="h-8 w-8" />}
+                                                                variant="condition"
+                                                                status={aiAssessment.overallCondition as any}
+                                                                objective="monitoring"
+                                                                animated={true}
+                                                                showStatusIndicator={true}
+                                                                className="group relative overflow-hidden"
+                                                            />
+
+                                                            {/* Risk Level Card - Enhanced with Predictive Analytics */}
+                                                            <ThemedAIMetricCard
+                                                                title="Risk Assessment"
+                                                                value={aiAssessment.riskLevel}
+                                                                subtitle={`${aiAssessment.anomalies.length} anomalies • Predictive analysis active`}
+                                                                icon={<AlertTriangle className="h-8 w-8" />}
+                                                                variant="risk"
+                                                                status={aiAssessment.riskLevel === 'low' ? 'good' : aiAssessment.riskLevel === 'medium' ? 'acceptable' : aiAssessment.riskLevel === 'high' ? 'unacceptable' : 'critical'}
+                                                                objective="prediction"
+                                                                animated={true}
+                                                                showStatusIndicator={true}
+                                                                className="group relative overflow-hidden"
+                                                            />
+
+                                                            {/* Priority Card - Enhanced with Action Indicators */}
+                                                            <ThemedAIMetricCard
+                                                                title="Priority Level"
+                                                                value={aiAssessment.priority}
+                                                                subtitle={`${aiAssessment.recommendations.filter(r => r.priority === 'urgent').length} urgent actions required`}
+                                                                icon={<Target className="h-8 w-8" />}
+                                                                variant="priority"
+                                                                status={aiAssessment.priority === 'low' ? 'good' : aiAssessment.priority === 'medium' ? 'acceptable' : aiAssessment.priority === 'high' ? 'unacceptable' : 'critical'}
+                                                                objective="maintenance"
+                                                                animated={true}
+                                                                showStatusIndicator={true}
+                                                                className="group relative overflow-hidden"
+                                                            />
+                                                        </div>
+
+                                                        {/* Enhanced AI Summary Statistics with Professional Design */}
+                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                            {/* AI Insights Summary Card */}
+                                                            <div
+                                                                className="group relative p-6 rounded-2xl border backdrop-blur-xl transition-all duration-2000 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] hover:scale-[1.02] hover:shadow-2xl cursor-pointer overflow-hidden"
+                                                                style={{
+                                                                    background: `linear-gradient(135deg, ${themeClasses.glassBg}, ${themeClasses.glassBg}80)`,
+                                                                    borderColor: `${themeClasses.glassBorder}`,
+                                                                    boxShadow: `0 12px 40px ${themeClasses.glassBg}40`
+                                                                }}
+                                                            >
+                                                                {/* Floating Particles Effect */}
+                                                                <div className="absolute top-2 right-2 w-2 h-2 bg-amber-400/60 rounded-full animate-pulse"></div>
+                                                                <div className="absolute bottom-4 left-4 w-1 h-1 bg-blue-400/40 rounded-full animate-ping"></div>
+
+                                                                <div className="relative z-10">
+                                                                    <div className="flex items-center gap-3 mb-4">
+                                                                        <div
+                                                                            className="p-3 rounded-xl transition-all duration-2000 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-110 group-hover:rotate-3"
+                                                                            style={{
+                                                                                background: `linear-gradient(135deg, ${themeClasses.accent}, ${themeClasses.accent}cc)`,
+                                                                                boxShadow: `0 4px 16px ${themeClasses.accent}40`
+                                                                            }}
+                                                                        >
+                                                                            <Lightbulb className="h-6 w-6 transition-all duration-2000" style={{ color: themeClasses.primary }} />
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="font-bold text-lg text-foreground transition-colors duration-1500">AI Insights</span>
+                                                                            <div className="text-sm text-muted-foreground">Intelligent Analysis</div>
                                                                         </div>
                                                                     </div>
-                                                                    <div className="flex items-center gap-2">
-                                                                        <div className="flex-1 bg-white/20 rounded-full h-2">
-                                                                            <div
-                                                                                className="bg-white rounded-full h-2 transition-all duration-1000"
-                                                                                style={{ width: `${aiAssessment.healthScore || 0}%` }}
-                                                                            ></div>
+                                                                </div>
+                                                                <div className="flex items-center justify-between mb-2">
+                                                                    <div className="text-4xl font-black text-foreground transition-all duration-2000 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-110">
+                                                                        {aiAssessment.insights.length}
+                                                                    </div>
+                                                                    <div className="flex gap-1">
+                                                                        {aiAssessment.insights.filter(i => i.type === 'critical').length > 0 && (
+                                                                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                                                                        )}
+                                                                        {aiAssessment.insights.filter(i => i.type === 'warning').length > 0 && (
+                                                                            <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                                                                        )}
+                                                                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="text-sm text-muted-foreground transition-colors duration-1500 leading-relaxed">
+                                                                    <span className="font-medium text-red-500">{aiAssessment.insights.filter(i => i.type === 'critical').length} critical</span>
+                                                                    <span className="mx-1">•</span>
+                                                                    <span className="font-medium text-yellow-500">{aiAssessment.insights.filter(i => i.type === 'warning').length} warnings</span>
+                                                                </div>
+                                                                <div className="mt-4 h-2 rounded-full overflow-hidden" style={{ background: `${themeClasses.accent}` }}>
+                                                                    <div
+                                                                        className="h-full transition-all duration-2000 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]"
+                                                                        style={{
+                                                                            background: `linear-gradient(90deg, ${themeClasses.primary}, ${themeClasses.primary}cc)`,
+                                                                            width: `${Math.min((aiAssessment.insights.length / 10) * 100, 100)}%`
+                                                                        }}
+                                                                    />
+                                                                </div>
+                                                            </div>
+
+                                                            {/* AI Recommendations Summary Card */}
+                                                            <div
+                                                                className="group relative p-6 rounded-2xl border backdrop-blur-xl transition-all duration-2000 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] hover:scale-[1.02] hover:shadow-2xl cursor-pointer overflow-hidden"
+                                                                style={{
+                                                                    background: `linear-gradient(135deg, ${themeClasses.glassBg}, ${themeClasses.glassBg}80)`,
+                                                                    borderColor: `${themeClasses.glassBorder}`,
+                                                                    boxShadow: `0 12px 40px ${themeClasses.glassBg}40`
+                                                                }}
+                                                            >
+                                                                {/* Floating Particles Effect */}
+                                                                <div className="absolute top-4 right-4 w-1.5 h-1.5 bg-emerald-400/60 rounded-full animate-bounce"></div>
+                                                                <div className="absolute bottom-2 left-2 w-1 h-1 bg-purple-400/40 rounded-full animate-ping"></div>
+
+                                                                <div className="relative z-10">
+                                                                    <div className="flex items-center gap-3 mb-4">
+                                                                        <div
+                                                                            className="p-3 rounded-xl transition-all duration-2000 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-110 group-hover:-rotate-3"
+                                                                            style={{
+                                                                                background: `linear-gradient(135deg, ${themeClasses.accent}, ${themeClasses.accent}cc)`,
+                                                                                boxShadow: `0 4px 16px ${themeClasses.accent}40`
+                                                                            }}
+                                                                        >
+                                                                            <Target className="h-6 w-6 transition-all duration-2000" style={{ color: themeClasses.primary }} />
                                                                         </div>
-                                                                        <span className="text-xs opacity-75">
-                                                                            {aiAssessment.confidence}% confidence
-                                                                        </span>
+                                                                        <div>
+                                                                            <span className="font-bold text-lg text-foreground transition-colors duration-1500">Recommendations</span>
+                                                                            <div className="text-sm text-muted-foreground">Action Items</div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="flex items-center justify-between mb-2">
+                                                                        <div className="text-4xl font-black text-foreground transition-all duration-2000 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-110">
+                                                                            {aiAssessment.recommendations.length}
+                                                                        </div>
+                                                                        <div className="flex gap-1">
+                                                                            {aiAssessment.recommendations.filter(r => r.priority === 'urgent').length > 0 && (
+                                                                                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                                                                            )}
+                                                                            {aiAssessment.recommendations.filter(r => r.priority === 'high').length > 0 && (
+                                                                                <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                                                                            )}
+                                                                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="text-sm text-muted-foreground transition-colors duration-1500 leading-relaxed">
+                                                                        <span className="font-medium text-red-500">{aiAssessment.recommendations.filter(r => r.priority === 'urgent').length} urgent</span>
+                                                                        <span className="mx-1">•</span>
+                                                                        <span className="font-medium text-orange-500">{aiAssessment.recommendations.filter(r => r.priority === 'high').length} high priority</span>
+                                                                    </div>
+                                                                    <div className="mt-4 h-2 rounded-full overflow-hidden" style={{ background: `${themeClasses.accent}` }}>
+                                                                        <div
+                                                                            className="h-full transition-all duration-2000 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]"
+                                                                            style={{
+                                                                                background: `linear-gradient(90deg, ${themeClasses.primary}, ${themeClasses.primary}cc)`,
+                                                                                width: `${Math.min((aiAssessment.recommendations.length / 8) * 100, 100)}%`
+                                                                            }}
+                                                                        />
                                                                     </div>
                                                                 </div>
                                                             </div>
 
-                                                            {/* Condition Card */}
-                                                            <div className="group relative overflow-hidden bg-gradient-to-br from-primary/90 via-primary to-primary/80 dark:from-primary dark:via-primary/90 dark:to-primary/70 rounded-2xl p-6 text-primary-foreground shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 border border-primary/20">
-                                                                <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
-                                                                <div className="relative">
-                                                                    <div className="flex items-center justify-between mb-4">
-                                                                        <Shield className="h-8 w-8 text-primary-foreground/80" />
-                                                                        <div className="text-right">
-                                                                            <Badge
-                                                                                className={`text-sm px-3 py-1 ${aiAssessment.overallCondition === 'excellent' ? 'bg-green-500 text-white' :
-                                                                                    aiAssessment.overallCondition === 'good' ? 'bg-blue-500 text-white' :
-                                                                                        aiAssessment.overallCondition === 'acceptable' ? 'bg-yellow-500 text-white' :
-                                                                                            'bg-red-500 text-white'
-                                                                                    }`}
-                                                                            >
-                                                                                {aiAssessment.overallCondition.toUpperCase()}
-                                                                            </Badge>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="text-sm opacity-90">Equipment Condition</div>
-                                                                </div>
-                                                            </div>
+                                                            {/* AI Trends Analysis Summary Card */}
+                                                            <div
+                                                                className="group relative p-6 rounded-2xl border backdrop-blur-xl transition-all duration-2000 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] hover:scale-[1.02] hover:shadow-2xl cursor-pointer overflow-hidden"
+                                                                style={{
+                                                                    background: `linear-gradient(135deg, ${themeClasses.glassBg}, ${themeClasses.glassBg}80)`,
+                                                                    borderColor: `${themeClasses.glassBorder}`,
+                                                                    boxShadow: `0 12px 40px ${themeClasses.glassBg}40`
+                                                                }}
+                                                            >
+                                                                {/* Floating Particles Effect */}
+                                                                <div className="absolute top-3 right-3 w-1 h-1 bg-cyan-400/60 rounded-full animate-ping"></div>
+                                                                <div className="absolute bottom-3 left-3 w-1.5 h-1.5 bg-indigo-400/40 rounded-full animate-bounce"></div>
 
-                                                            {/* Risk Level Card */}
-                                                            <div className="group relative overflow-hidden bg-gradient-to-br from-destructive/90 via-orange-500/90 to-red-500/90 dark:from-destructive dark:via-orange-600 dark:to-red-600 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 border border-destructive/20">
-                                                                <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
-                                                                <div className="relative">
-                                                                    <div className="flex items-center justify-between mb-4">
-                                                                        <AlertTriangle className="h-8 w-8 text-white/80" />
-                                                                        <div className="text-right">
-                                                                            <Badge
-                                                                                className={`text-sm px-3 py-1 ${aiAssessment.riskLevel === 'low' ? 'bg-green-500 text-white' :
-                                                                                    aiAssessment.riskLevel === 'medium' ? 'bg-yellow-500 text-white' :
-                                                                                        'bg-red-500 text-white'
-                                                                                    }`}
-                                                                            >
-                                                                                {aiAssessment.riskLevel.toUpperCase()} RISK
-                                                                            </Badge>
+                                                                <div className="relative z-10">
+                                                                    <div className="flex items-center gap-3 mb-4">
+                                                                        <div
+                                                                            className="p-3 rounded-xl transition-all duration-2000 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-110 group-hover:rotate-6"
+                                                                            style={{
+                                                                                background: `linear-gradient(135deg, ${themeClasses.accent}, ${themeClasses.accent}cc)`,
+                                                                                boxShadow: `0 4px 16px ${themeClasses.accent}40`
+                                                                            }}
+                                                                        >
+                                                                            <TrendingUp className="h-6 w-6 transition-all duration-2000" style={{ color: themeClasses.primary }} />
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="font-bold text-lg text-foreground transition-colors duration-1500">Trend Analysis</span>
+                                                                            <div className="text-sm text-muted-foreground">Predictive Insights</div>
                                                                         </div>
                                                                     </div>
-                                                                    <div className="text-sm opacity-90">Risk Assessment</div>
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Priority Card */}
-                                                            <div className="group relative overflow-hidden bg-gradient-to-br from-violet-500/90 via-purple-500/90 to-indigo-600/90 dark:from-violet-600 dark:via-purple-600 dark:to-indigo-700 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 border border-violet-400/20">
-                                                                <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
-                                                                <div className="relative">
-                                                                    <div className="flex items-center justify-between mb-4">
-                                                                        <Target className="h-8 w-8 text-white/80" />
-                                                                        <div className="text-right">
-                                                                            <Badge
-                                                                                className={`text-sm px-3 py-1 ${aiAssessment.priority === 'critical' || aiAssessment.priority === 'urgent' ? 'bg-red-500 text-white' :
-                                                                                    aiAssessment.priority === 'high' ? 'bg-orange-500 text-white' :
-                                                                                        aiAssessment.priority === 'medium' ? 'bg-yellow-500 text-white' :
-                                                                                            'bg-green-500 text-white'
-                                                                                    }`}
-                                                                            >
-                                                                                {aiAssessment.priority.toUpperCase()}
-                                                                            </Badge>
+                                                                    <div className="flex items-center justify-between mb-2">
+                                                                        <div className="text-4xl font-black text-foreground transition-all duration-2000 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-110">
+                                                                            {aiAssessment.trends.length}
+                                                                        </div>
+                                                                        <div className="flex gap-1">
+                                                                            {aiAssessment.trends.filter(t => t.direction === 'increasing').length > 0 && (
+                                                                                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                                                                            )}
+                                                                            {aiAssessment.trends.filter(t => t.direction === 'decreasing').length > 0 && (
+                                                                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                                                            )}
+                                                                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
                                                                         </div>
                                                                     </div>
-                                                                    <div className="text-sm opacity-90">Priority Level</div>
+                                                                    <div className="text-sm text-muted-foreground transition-colors duration-1500 leading-relaxed">
+                                                                        <span className="font-medium text-red-500">{aiAssessment.trends.filter(t => t.direction === 'increasing').length} increasing</span>
+                                                                        <span className="mx-1">•</span>
+                                                                        <span className="font-medium text-green-500">{aiAssessment.trends.filter(t => t.direction === 'stable').length} stable</span>
+                                                                    </div>
+                                                                    <div className="mt-4 h-2 rounded-full overflow-hidden" style={{ background: `${themeClasses.accent}` }}>
+                                                                        <div
+                                                                            className="h-full transition-all duration-2000 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]"
+                                                                            style={{
+                                                                                background: `linear-gradient(90deg, ${themeClasses.primary}, ${themeClasses.primary}cc)`,
+                                                                                width: `${Math.min((aiAssessment.trends.length / 5) * 100, 100)}%`
+                                                                            }}
+                                                                        />
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
 
-                                                        {/* AI Summary Statistics */}
-                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                            <div className="p-4 bg-gradient-to-r from-yellow-50 to-amber-100 rounded-lg border border-yellow-200">
-                                                                <div className="flex items-center gap-3 mb-2">
-                                                                    <Lightbulb className="h-5 w-5 text-yellow-600" />
-                                                                    <span className="font-semibold text-yellow-800">AI Insights</span>
+                                                        {/* Enhanced Real-time Monitoring Section */}
+                                                        <div className="space-y-6">
+                                                            <div className="flex items-center justify-between">
+                                                                <div>
+                                                                    <h3 className="text-xl font-bold text-foreground transition-colors duration-1500">Real-time Equipment Monitoring</h3>
+                                                                    <p className="text-sm text-muted-foreground">Live status indicators and performance metrics</p>
                                                                 </div>
-                                                                <div className="text-2xl font-bold text-yellow-700">{aiAssessment.insights.length}</div>
-                                                                <div className="text-sm text-yellow-600">
-                                                                    {aiAssessment.insights.filter(i => i.type === 'critical').length} Critical
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-100 rounded-lg border border-blue-200">
-                                                                <div className="flex items-center gap-3 mb-2">
-                                                                    <Target className="h-5 w-5 text-blue-600" />
-                                                                    <span className="font-semibold text-blue-800">Recommendations</span>
-                                                                </div>
-                                                                <div className="text-2xl font-bold text-blue-700">{aiAssessment.recommendations.length}</div>
-                                                                <div className="text-sm text-blue-600">
-                                                                    {aiAssessment.recommendations.filter(r => r.priority === 'urgent').length} Urgent
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                                                    <span className="text-sm font-medium text-green-600">Live</span>
                                                                 </div>
                                                             </div>
 
-                                                            <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-100 rounded-lg border border-purple-200">
-                                                                <div className="flex items-center gap-3 mb-2">
-                                                                    <TrendingUp className="h-5 w-5 text-purple-600" />
-                                                                    <span className="font-semibold text-purple-800">Trend Analysis</span>
+                                                            <div
+                                                                className="group p-6 rounded-xl border backdrop-blur-sm transition-all duration-1500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] hover:scale-105 hover:shadow-xl cursor-pointer"
+                                                                style={{
+                                                                    background: `${themeClasses.glassBg}`,
+                                                                    borderColor: `${themeClasses.glassBorder}`,
+                                                                    boxShadow: `0 8px 32px ${themeClasses.glassBg}`
+                                                                }}
+                                                            >
+                                                                <div className="flex items-center gap-3 mb-3">
+                                                                    <div
+                                                                        className="p-2 rounded-lg transition-all duration-1500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-110"
+                                                                        style={{ background: `${themeClasses.accent}` }}
+                                                                    >
+                                                                        <TrendingUp className="h-5 w-5 transition-colors duration-1500" style={{ color: themeClasses.primary }} />
+                                                                    </div>
+                                                                    <span className="font-semibold text-foreground transition-colors duration-1500">Trend Analysis</span>
                                                                 </div>
-                                                                <div className="text-2xl font-bold text-purple-700">{aiAssessment.trends.length}</div>
-                                                                <div className="text-sm text-purple-600">
+                                                                <div className="text-3xl font-bold mb-2 transition-all duration-1500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-110" style={{ color: themeClasses.primary }}>
+                                                                    {aiAssessment.trends.length}
+                                                                </div>
+                                                                <div className="text-sm text-muted-foreground transition-colors duration-1500">
                                                                     {aiAssessment.trends.filter(t => t.direction === 'increasing').length} Increasing
+                                                                </div>
+                                                                <div className="mt-3 h-1 rounded-full overflow-hidden" style={{ background: `${themeClasses.accent}` }}>
+                                                                    <div
+                                                                        className="h-full transition-all duration-2000 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]"
+                                                                        style={{
+                                                                            background: themeClasses.gradient,
+                                                                            width: `${Math.min((aiAssessment.trends.length / 6) * 100, 100)}%`
+                                                                        }}
+                                                                    />
                                                                 </div>
                                                             </div>
                                                         </div>
 
                                                         {/* AI Maintenance Indicators */}
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                            <div className="p-4 bg-gradient-to-r from-red-50 to-pink-100 dark:from-red-950/30 dark:to-pink-950/30 rounded-lg border border-red-200 dark:border-red-600/30">
-                                                                <div className="flex items-center gap-3 mb-3">
-                                                                    <Settings className="h-5 w-5 text-red-600 dark:text-red-400" />
-                                                                    <span className="font-semibold text-red-800 dark:text-red-300">Maintenance Status</span>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                            <div
+                                                                className="group p-6 rounded-xl border backdrop-blur-sm transition-all duration-1500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] hover:scale-105 hover:shadow-xl"
+                                                                style={{
+                                                                    background: aiAssessment.maintenanceRequired || aiAssessment.immediateAction
+                                                                        ? `hsl(var(--destructive) / 0.1)`
+                                                                        : `${themeClasses.glassBg}`,
+                                                                    borderColor: aiAssessment.maintenanceRequired || aiAssessment.immediateAction
+                                                                        ? `hsl(var(--destructive) / 0.3)`
+                                                                        : `${themeClasses.glassBorder}`,
+                                                                    boxShadow: `0 8px 32px ${aiAssessment.maintenanceRequired || aiAssessment.immediateAction
+                                                                        ? 'hsl(var(--destructive) / 0.1)'
+                                                                        : themeClasses.glassBg}`
+                                                                }}
+                                                            >
+                                                                <div className="flex items-center gap-3 mb-4">
+                                                                    <div
+                                                                        className="p-2 rounded-lg transition-all duration-1500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-110"
+                                                                        style={{
+                                                                            background: aiAssessment.maintenanceRequired || aiAssessment.immediateAction
+                                                                                ? `hsl(var(--destructive) / 0.2)`
+                                                                                : `${themeClasses.accent}`
+                                                                        }}
+                                                                    >
+                                                                        <Settings
+                                                                            className="h-5 w-5 transition-colors duration-1500"
+                                                                            style={{
+                                                                                color: aiAssessment.maintenanceRequired || aiAssessment.immediateAction
+                                                                                    ? 'hsl(var(--destructive))'
+                                                                                    : themeClasses.primary
+                                                                            }}
+                                                                        />
+                                                                    </div>
+                                                                    <span
+                                                                        className="font-semibold transition-colors duration-1500"
+                                                                        style={{
+                                                                            color: aiAssessment.maintenanceRequired || aiAssessment.immediateAction
+                                                                                ? 'hsl(var(--destructive))'
+                                                                                : 'hsl(var(--foreground))'
+                                                                        }}
+                                                                    >
+                                                                        Maintenance Status
+                                                                    </span>
                                                                 </div>
-                                                                <div className="space-y-2">
-                                                                    <div className="flex items-center justify-between">
-                                                                        <span className="text-sm text-red-700 dark:text-red-300">Maintenance Required:</span>
-                                                                        <Badge variant={aiAssessment.maintenanceRequired ? "destructive" : "default"}>
+                                                                <div className="space-y-3">
+                                                                    <div className="flex items-center justify-between group/item">
+                                                                        <span
+                                                                            className="text-sm transition-colors duration-1500 group-hover/item:font-medium"
+                                                                            style={{
+                                                                                color: aiAssessment.maintenanceRequired || aiAssessment.immediateAction
+                                                                                    ? 'hsl(var(--destructive))'
+                                                                                    : 'hsl(var(--muted-foreground))'
+                                                                            }}
+                                                                        >
+                                                                            Maintenance Required:
+                                                                        </span>
+                                                                        <Badge
+                                                                            variant={aiAssessment.maintenanceRequired ? "destructive" : "default"}
+                                                                            className="transition-all duration-1500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover/item:scale-105"
+                                                                        >
                                                                             {aiAssessment.maintenanceRequired ? "YES" : "NO"}
                                                                         </Badge>
                                                                     </div>
-                                                                    <div className="flex items-center justify-between">
-                                                                        <span className="text-sm text-red-700 dark:text-red-300">Immediate Action:</span>
-                                                                        <Badge variant={aiAssessment.immediateAction ? "destructive" : "default"}>
+                                                                    <div className="flex items-center justify-between group/item">
+                                                                        <span
+                                                                            className="text-sm transition-colors duration-1500 group-hover/item:font-medium"
+                                                                            style={{
+                                                                                color: aiAssessment.maintenanceRequired || aiAssessment.immediateAction
+                                                                                    ? 'hsl(var(--destructive))'
+                                                                                    : 'hsl(var(--muted-foreground))'
+                                                                            }}
+                                                                        >
+                                                                            Immediate Action:
+                                                                        </span>
+                                                                        <Badge
+                                                                            variant={aiAssessment.immediateAction ? "destructive" : "default"}
+                                                                            className="transition-all duration-1500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover/item:scale-105"
+                                                                        >
                                                                             {aiAssessment.immediateAction ? "REQUIRED" : "NOT NEEDED"}
                                                                         </Badge>
                                                                     </div>
                                                                 </div>
+                                                                {(aiAssessment.maintenanceRequired || aiAssessment.immediateAction) && (
+                                                                    <div className="mt-4 p-3 rounded-lg" style={{ background: `hsl(var(--destructive) / 0.05)` }}>
+                                                                        <div className="flex items-center gap-2 text-xs" style={{ color: 'hsl(var(--destructive))' }}>
+                                                                            <AlertTriangle className="h-3 w-3" />
+                                                                            <span className="font-medium">Action Required</span>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
                                                             </div>
 
-                                                            <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-100 rounded-lg border border-green-200">
-                                                                <div className="flex items-center gap-3 mb-3">
-                                                                    <Clock className="h-5 w-5 text-green-600" />
-                                                                    <span className="font-semibold text-green-800">Next Inspection</span>
+                                                            <div
+                                                                className="group p-6 rounded-xl border backdrop-blur-sm transition-all duration-1500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] hover:scale-105 hover:shadow-xl"
+                                                                style={{
+                                                                    background: `${themeClasses.glassBg}`,
+                                                                    borderColor: `${themeClasses.glassBorder}`,
+                                                                    boxShadow: `0 8px 32px ${themeClasses.glassBg}`
+                                                                }}
+                                                            >
+                                                                <div className="flex items-center gap-3 mb-4">
+                                                                    <div
+                                                                        className="p-2 rounded-lg transition-all duration-1500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-110"
+                                                                        style={{ background: `${themeClasses.accent}` }}
+                                                                    >
+                                                                        <Clock className="h-5 w-5 transition-colors duration-1500" style={{ color: themeClasses.primary }} />
+                                                                    </div>
+                                                                    <span className="font-semibold text-foreground transition-colors duration-1500">Next Inspection</span>
                                                                 </div>
-                                                                <div className="text-lg font-bold text-green-700">
+                                                                <div className="text-xl font-bold mb-2 transition-all duration-1500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] group-hover:scale-105" style={{ color: themeClasses.primary }}>
                                                                     {aiAssessment.nextInspectionDate ?
                                                                         format(new Date(aiAssessment.nextInspectionDate), 'MMM dd, yyyy') :
                                                                         'Not scheduled'
                                                                     }
                                                                 </div>
-                                                                <div className="text-sm text-green-600 mt-1">
+                                                                <div className="text-sm text-muted-foreground transition-colors duration-1500">
                                                                     AI-recommended schedule
+                                                                </div>
+                                                                <div className="mt-4 flex items-center gap-2">
+                                                                    <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: `${themeClasses.accent}` }}>
+                                                                        <div
+                                                                            className="h-full transition-all duration-2000 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]"
+                                                                            style={{
+                                                                                background: themeClasses.gradient,
+                                                                                width: aiAssessment.nextInspectionDate ? '75%' : '25%'
+                                                                            }}
+                                                                        />
+                                                                    </div>
+                                                                    <span className="text-xs text-muted-foreground">
+                                                                        {aiAssessment.nextInspectionDate ? 'Scheduled' : 'Pending'}
+                                                                    </span>
                                                                 </div>
                                                             </div>
                                                         </div>
 
                                                         {/* 🔍 VIBRATION DATA DEBUG PANEL */}
-                                                        <div className="bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg border border-blue-200 dark:border-blue-600/30">
-                                                            <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-4 flex items-center gap-2">
+                                                        <div
+                                                            className="p-4 rounded-lg border"
+                                                            style={{
+                                                                background: themeClasses.cardBg,
+                                                                borderColor: themeClasses.cardBorder
+                                                            }}
+                                                        >
+                                                            <h4 className="font-semibold mb-4 flex items-center gap-2" style={{ color: themeClasses.primary }}>
                                                                 <Search className="h-4 w-4" />
                                                                 Vibration Data Debug Panel
                                                             </h4>
                                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                                                                 <div className="space-y-2">
-                                                                    <div className="font-medium text-blue-700 dark:text-blue-300">Pump NDE RMS:</div>
-                                                                    <div className="font-mono bg-white p-2 rounded border">
+                                                                    <div className="font-medium" style={{ color: themeClasses.primary }}>Pump NDE RMS:</div>
+                                                                    <div className="font-mono p-2 rounded border" style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
                                                                         {(() => {
                                                                             const nde = formValues.vibrationData?.pump?.nde || {};
                                                                             const rms = calcRMSVelocity(nde);
@@ -4960,8 +5178,8 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                                     </div>
                                                                 </div>
                                                                 <div className="space-y-2">
-                                                                    <div className="font-medium text-blue-700">Motor NDE RMS:</div>
-                                                                    <div className="font-mono bg-white p-2 rounded border">
+                                                                    <div className="font-medium" style={{ color: themeClasses.primary }}>Motor NDE RMS:</div>
+                                                                    <div className="font-mono p-2 rounded border" style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
                                                                         {(() => {
                                                                             const nde = formValues.vibrationData?.motor?.nde || {};
                                                                             const rms = calcRMSVelocity(nde);
@@ -4971,14 +5189,14 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                                     </div>
                                                                 </div>
                                                                 <div className="space-y-2">
-                                                                    <div className="font-medium text-blue-700">AI Health Score:</div>
-                                                                    <div className="font-mono bg-white p-2 rounded border">
+                                                                    <div className="font-medium" style={{ color: themeClasses.primary }}>AI Health Score:</div>
+                                                                    <div className="font-mono p-2 rounded border" style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
                                                                         {aiAssessment.healthScore}% ({aiAssessment.overallCondition})
                                                                     </div>
                                                                 </div>
                                                                 <div className="space-y-2">
-                                                                    <div className="font-medium text-blue-700">Failure Analysis Count:</div>
-                                                                    <div className="font-mono bg-white p-2 rounded border">
+                                                                    <div className="font-medium" style={{ color: themeClasses.primary }}>Failure Analysis Count:</div>
+                                                                    <div className="font-mono p-2 rounded border" style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
                                                                         {(() => {
                                                                             // Calculate failure analysis count from current vibration data
                                                                             if (!formValues.vibrationData) return 'No data';
@@ -5010,8 +5228,14 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                         </div>
 
                                                         {/* AI Assessment Form Fields */}
-                                                        <div className="bg-gray-50 p-4 rounded-lg border">
-                                                            <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                                        <div
+                                                            className="p-4 rounded-lg border"
+                                                            style={{
+                                                                background: themeClasses.cardBg,
+                                                                borderColor: themeClasses.cardBorder
+                                                            }}
+                                                        >
+                                                            <h4 className="font-semibold mb-4 flex items-center gap-2" style={{ color: themeClasses.primary }}>
                                                                 <Brain className="h-4 w-4" />
                                                                 AI Assessment Form Fields
                                                             </h4>
@@ -5116,14 +5340,14 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                             </div>
                                                         </div>
 
-                                                    </TabsContent>
+                                                    </ThemedAITabsContent>
 
                                                     {/* Insights Tab */}
-                                                    <TabsContent value="insights" className="space-y-4">
+                                                    <ThemedAITabsContent value="insights" className="space-y-4" variant="glass">
                                                         {aiAssessment.insights.length > 0 ? (
                                                             <div className="space-y-3">
                                                                 <div className="flex items-center gap-2">
-                                                                    <Lightbulb className="h-4 w-4 text-yellow-600" />
+                                                                    <Lightbulb className="h-4 w-4" style={{ color: themeClasses.primary }} />
                                                                     <h4 className="font-semibold">AI Insights</h4>
                                                                     <Badge variant="outline" className="text-xs">
                                                                         {aiAssessment.insights.length} insights
@@ -5171,10 +5395,10 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                                 <p className="text-sm text-muted-foreground">AI insights will appear here after assessment</p>
                                                             </div>
                                                         )}
-                                                    </TabsContent>
+                                                    </ThemedAITabsContent>
 
                                                     {/* Recommendations Tab */}
-                                                    <TabsContent value="recommendations" className="space-y-4">
+                                                    <ThemedAITabsContent value="recommendations" className="space-y-4" variant="glass">
                                                         {aiAssessment.recommendations.length > 0 ? (
                                                             <div className="space-y-3">
                                                                 <div className="flex items-center gap-2">
@@ -5228,14 +5452,14 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                                 <p className="text-sm text-muted-foreground">AI recommendations will appear here after assessment</p>
                                                             </div>
                                                         )}
-                                                    </TabsContent>
+                                                    </ThemedAITabsContent>
 
                                                     {/* Trends Tab */}
-                                                    <TabsContent value="trends" className="space-y-4">
+                                                    <ThemedAITabsContent value="trends" className="space-y-4" variant="glass">
                                                         {aiAssessment.trends.length > 0 ? (
                                                             <div className="space-y-3">
                                                                 <div className="flex items-center gap-2">
-                                                                    <TrendingUp className="h-4 w-4 text-purple-600" />
+                                                                    <TrendingUp className="h-4 w-4" style={{ color: themeClasses.primary }} />
                                                                     <h4 className="font-semibold">AI Trend Analysis</h4>
                                                                     <Badge variant="outline" className="text-xs">
                                                                         {aiAssessment.trends.length} trends
@@ -5277,60 +5501,90 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                                 <p className="text-sm text-muted-foreground">AI trend analysis will appear here after assessment</p>
                                                             </div>
                                                         )}
-                                                    </TabsContent>
+                                                    </ThemedAITabsContent>
 
                                                     {/* 🏥 HEALTH TAB - Comprehensive Health Assessment */}
-                                                    <TabsContent value="health" className="space-y-4">
+                                                    <ThemedAITabsContent value="health" className="space-y-4" variant="glass">
                                                         <div className="space-y-6">
                                                             {/* AI Health Assessment Summary */}
                                                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                                                <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-100 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-lg border border-blue-200 dark:border-blue-600/30">
+                                                                <div
+                                                                    className="p-4 rounded-lg border"
+                                                                    style={{
+                                                                        background: `${themeClasses.accent}`,
+                                                                        borderColor: `${themeClasses.cardBorder}`
+                                                                    }}
+                                                                >
                                                                     <div className="flex items-center gap-3 mb-2">
-                                                                        <Activity className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                                                                        <span className="font-semibold text-blue-800 dark:text-blue-300">AI Health Score</span>
+                                                                        <Activity className="h-5 w-5" style={{ color: themeClasses.primary }} />
+                                                                        <span className="font-semibold" style={{ color: themeClasses.primary }}>AI Health Score</span>
                                                                     </div>
-                                                                    <div className="text-3xl font-bold text-blue-700 dark:text-blue-300">
+                                                                    <div className="text-3xl font-bold" style={{ color: themeClasses.primary }}>
                                                                         {aiAssessment.healthScore}%
                                                                     </div>
-                                                                    <div className="text-sm text-blue-600 dark:text-blue-400">AI Assessment</div>
+                                                                    <div className="text-sm" style={{ color: themeClasses.primary }}>AI Assessment</div>
                                                                 </div>
 
-                                                                <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-100 dark:from-green-950/30 dark:to-emerald-950/30 rounded-lg border border-green-200 dark:border-green-600/30">
+                                                                <div
+                                                                    className="p-4 rounded-lg border"
+                                                                    style={{
+                                                                        background: `${themeClasses.accent}`,
+                                                                        borderColor: `${themeClasses.cardBorder}`
+                                                                    }}
+                                                                >
                                                                     <div className="flex items-center gap-3 mb-2">
-                                                                        <Shield className="h-5 w-5 text-green-600 dark:text-green-400" />
-                                                                        <span className="font-semibold text-green-800 dark:text-green-300">Confidence</span>
+                                                                        <Shield className="h-5 w-5" style={{ color: themeClasses.primary }} />
+                                                                        <span className="font-semibold" style={{ color: themeClasses.primary }}>Confidence</span>
                                                                     </div>
-                                                                    <div className="text-3xl font-bold text-green-700 dark:text-green-300">
+                                                                    <div className="text-3xl font-bold" style={{ color: themeClasses.primary }}>
                                                                         {aiAssessment.confidence}%
                                                                     </div>
-                                                                    <div className="text-sm text-green-600 dark:text-green-400">Assessment Confidence</div>
+                                                                    <div className="text-sm" style={{ color: themeClasses.primary }}>Assessment Confidence</div>
                                                                 </div>
 
-                                                                <div className="p-4 bg-gradient-to-r from-orange-50 to-red-100 dark:from-orange-950/30 dark:to-red-950/30 rounded-lg border border-orange-200 dark:border-orange-600/30">
+                                                                <div
+                                                                    className="p-4 rounded-lg border"
+                                                                    style={{
+                                                                        background: `hsl(var(--destructive) / 0.1)`,
+                                                                        borderColor: `hsl(var(--destructive) / 0.3)`
+                                                                    }}
+                                                                >
                                                                     <div className="flex items-center gap-3 mb-2">
-                                                                        <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-                                                                        <span className="font-semibold text-orange-800 dark:text-orange-300">Risk Level</span>
+                                                                        <AlertTriangle className="h-5 w-5 text-destructive" />
+                                                                        <span className="font-semibold text-destructive">Risk Level</span>
                                                                     </div>
-                                                                    <div className="text-lg font-bold text-orange-700 dark:text-orange-300">
+                                                                    <div className="text-lg font-bold text-destructive">
                                                                         {aiAssessment.riskLevel.toUpperCase()}
                                                                     </div>
-                                                                    <div className="text-sm text-orange-600 dark:text-orange-400">Current Risk</div>
+                                                                    <div className="text-sm text-destructive">Current Risk</div>
                                                                 </div>
 
-                                                                <div className="p-4 bg-gradient-to-r from-purple-50 to-violet-100 dark:from-purple-950/30 dark:to-violet-950/30 rounded-lg border border-purple-200 dark:border-purple-600/30">
+                                                                <div
+                                                                    className="p-4 rounded-lg border"
+                                                                    style={{
+                                                                        background: `${themeClasses.accent}`,
+                                                                        borderColor: `${themeClasses.cardBorder}`
+                                                                    }}
+                                                                >
                                                                     <div className="flex items-center gap-3 mb-2">
-                                                                        <Target className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                                                                        <span className="font-semibold text-purple-800 dark:text-purple-300">Priority</span>
+                                                                        <Target className="h-5 w-5" style={{ color: themeClasses.primary }} />
+                                                                        <span className="font-semibold" style={{ color: themeClasses.primary }}>Priority</span>
                                                                     </div>
-                                                                    <div className="text-lg font-bold text-purple-700 dark:text-purple-300">
+                                                                    <div className="text-lg font-bold" style={{ color: themeClasses.primary }}>
                                                                         {aiAssessment.priority.toUpperCase()}
                                                                     </div>
-                                                                    <div className="text-sm text-purple-600 dark:text-purple-400">Action Priority</div>
+                                                                    <div className="text-sm" style={{ color: themeClasses.primary }}>Action Priority</div>
                                                                 </div>
                                                             </div>
 
                                                             {/* Health Trend Visualization */}
-                                                            <div className="p-6 bg-gradient-to-r from-muted/30 to-blue-50 dark:from-muted/20 dark:to-blue-950/30 rounded-lg border border-border">
+                                                            <div
+                                                                className="p-6 rounded-lg border"
+                                                                style={{
+                                                                    background: themeClasses.cardBg,
+                                                                    borderColor: themeClasses.cardBorder
+                                                                }}
+                                                            >
                                                                 <h4 className="font-semibold text-foreground mb-4 flex items-center gap-2">
                                                                     <TrendingUp className="h-5 w-5 text-primary" />
                                                                     Equipment Health Overview
@@ -5393,13 +5647,16 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    </TabsContent>
+                                                    </ThemedAITabsContent>
 
                                                     {/* 🔧 INTELLIGENT MAINTENANCE PLANNING TAB */}
-                                                    <TabsContent value="maintenance" className="p-6 space-y-6">
+                                                    <ThemedAITabsContent value="maintenance" className="p-6 space-y-6" variant="glass">
                                                         <div className="space-y-6">
                                                             {/* Maintenance Plan Header */}
-                                                            <div className="flex items-center justify-between p-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl text-white">
+                                                            <div
+                                                                className="flex items-center justify-between p-6 rounded-2xl text-white"
+                                                                style={{ background: themeClasses.gradient }}
+                                                            >
                                                                 <div className="flex items-center gap-4">
                                                                     <div className="p-3 bg-white/20 rounded-xl">
                                                                         <Wrench className="h-8 w-8" />
@@ -5412,10 +5669,17 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                                 <Button
                                                                     onClick={() => {
                                                                         // Generate maintenance plan with enhanced failure analysis integration
-                                                                        const failureAnalyses = []; // Initialize empty array for now
+                                                                        const failureAnalyses: FailureAnalysis[] = []; // Initialize empty array for now
                                                                         generateMaintenancePlan(aiAssessment, failureAnalyses);
                                                                     }}
-                                                                    className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+                                                                    className="text-white"
+                                                                    style={{
+                                                                        background: 'rgba(255, 255, 255, 0.2)',
+                                                                        borderColor: 'rgba(255, 255, 255, 0.3)'
+                                                                    }}
+                                                                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)'}
+                                                                    onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
+
                                                                 >
                                                                     <PlayCircle className="h-4 w-4 mr-2" />
                                                                     Generate Plan
@@ -5426,7 +5690,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                             {aiAssessment && (
                                                                 <div className="space-y-4">
                                                                     <div className="flex items-center gap-2 mb-4">
-                                                                        <AlertTriangle className="h-5 w-5 text-orange-600" />
+                                                                        <AlertTriangle className="h-5 w-5" style={{ color: themeClasses.primary }} />
                                                                         <h3 className="text-lg font-semibold text-foreground">Failure Analysis Engine Outputs</h3>
                                                                         <Badge variant="outline" className="text-xs">
                                                                             AI Assessment Available
@@ -5455,8 +5719,8 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                                         {/* Corrective Measures from AI Assessment */}
                                                                         <div className="p-4 bg-yellow-50 dark:bg-yellow-950/30 rounded-lg border border-yellow-200 dark:border-yellow-600/30">
                                                                             <div className="flex items-center gap-2 mb-3">
-                                                                                <Wrench className="h-4 w-4 text-yellow-600" />
-                                                                                <h4 className="font-semibold text-yellow-800 dark:text-yellow-300">Corrective Measures</h4>
+                                                                                <Wrench className="h-4 w-4" style={{ color: themeClasses.primary }} />
+                                                                                <h4 className="font-semibold" style={{ color: themeClasses.primary }}>Corrective Measures</h4>
                                                                             </div>
                                                                             <div className="space-y-2 max-h-48 overflow-y-auto">
                                                                                 {aiAssessment.maintenanceRequired ? (
@@ -5477,36 +5741,60 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                                 <div className="space-y-6">
                                                                     {/* Plan Overview */}
                                                                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                                                        <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl border border-blue-200 dark:border-blue-600/30">
+                                                                        <div
+                                                                            className="p-4 rounded-xl border"
+                                                                            style={{
+                                                                                background: themeClasses.cardBg,
+                                                                                borderColor: themeClasses.cardBorder
+                                                                            }}
+                                                                        >
                                                                             <div className="flex items-center gap-3 mb-2">
-                                                                                <ClipboardList className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                                                                                <span className="font-semibold text-blue-800 dark:text-blue-300">Total Tasks</span>
+                                                                                <ClipboardList className="h-5 w-5" style={{ color: themeClasses.primary }} />
+                                                                                <span className="font-semibold" style={{ color: themeClasses.primary }}>Total Tasks</span>
                                                                             </div>
-                                                                            <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">{maintenancePlan.tasks.length}</div>
+                                                                            <div className="text-2xl font-bold" style={{ color: themeClasses.primary }}>{maintenancePlan.tasks.length}</div>
                                                                         </div>
 
-                                                                        <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-950/30 dark:to-emerald-950/30 rounded-xl border border-green-200 dark:border-green-600/30">
+                                                                        <div
+                                                                            className="p-4 rounded-xl border"
+                                                                            style={{
+                                                                                background: themeClasses.cardBg,
+                                                                                borderColor: themeClasses.cardBorder
+                                                                            }}
+                                                                        >
                                                                             <div className="flex items-center gap-3 mb-2">
-                                                                                <Timer className="h-5 w-5 text-green-600 dark:text-green-400" />
-                                                                                <span className="font-semibold text-green-800 dark:text-green-300">Est. Hours</span>
+                                                                                <Timer className="h-5 w-5" style={{ color: themeClasses.primary }} />
+                                                                                <span className="font-semibold" style={{ color: themeClasses.primary }}>Est. Hours</span>
                                                                             </div>
-                                                                            <div className="text-2xl font-bold text-green-700 dark:text-green-300">{maintenancePlan.totalEstimatedHours}</div>
+                                                                            <div className="text-2xl font-bold" style={{ color: themeClasses.primary }}>{maintenancePlan.totalEstimatedHours}</div>
                                                                         </div>
 
-                                                                        <div className="p-4 bg-gradient-to-br from-purple-50 to-violet-100 dark:from-purple-950/30 dark:to-violet-950/30 rounded-xl border border-purple-200 dark:border-purple-600/30">
+                                                                        <div
+                                                                            className="p-4 rounded-xl border"
+                                                                            style={{
+                                                                                background: themeClasses.cardBg,
+                                                                                borderColor: themeClasses.cardBorder
+                                                                            }}
+                                                                        >
                                                                             <div className="flex items-center gap-3 mb-2">
-                                                                                <Target className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                                                                                <span className="font-semibold text-purple-800 dark:text-purple-300">Progress</span>
+                                                                                <Target className="h-5 w-5" style={{ color: themeClasses.primary }} />
+                                                                                <span className="font-semibold" style={{ color: themeClasses.primary }}>Progress</span>
                                                                             </div>
-                                                                            <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">{maintenancePlan.completionPercentage}%</div>
+                                                                            <div className="text-2xl font-bold" style={{ color: themeClasses.primary }}>{maintenancePlan.completionPercentage}%</div>
                                                                         </div>
 
-                                                                        <div className="p-4 bg-gradient-to-br from-orange-50 to-red-100 dark:from-orange-950/30 dark:to-red-950/30 rounded-xl border border-orange-200 dark:border-orange-600/30">
+                                                                        <div
+                                                                            className="p-4 rounded-xl border"
+                                                                            style={{
+                                                                                background: themeClasses.cardBg,
+                                                                                borderColor: themeClasses.cardBorder
+                                                                            }}
+                                                                        >
                                                                             <div className="flex items-center gap-3 mb-2">
-                                                                                <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-                                                                                <span className="font-semibold text-orange-800 dark:text-orange-300">RUL Days</span>
+                                                                                <AlertTriangle className="h-5 w-5" style={{ color: themeClasses.primary }} />
+                                                                                <span className="font-semibold" style={{ color: themeClasses.primary }}>RUL Days</span>
                                                                             </div>
-                                                                            <div className="text-2xl font-bold text-orange-700 dark:text-orange-300">
+                                                                            <div className="text-2xl font-bold" style={{ color: themeClasses.primary }}>
                                                                                 {maintenancePlan.rulPrediction?.estimatedRUL || 'N/A'}
                                                                             </div>
                                                                         </div>
@@ -5584,183 +5872,289 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                                 </div>
                                                             )}
                                                         </div>
-                                                    </TabsContent>
+                                                    </ThemedAITabsContent>
 
-                                                    {/* 📊 ADVANCED CHARTS & ANALYTICS TAB */}
-                                                    <TabsContent value="charts" className="p-6 space-y-6">
-                                                        <div className="space-y-6">
-                                                            {/* Charts Header */}
-                                                            <div className="flex items-center justify-between p-6 bg-gradient-to-r from-primary to-primary/80 rounded-2xl text-primary-foreground">
-                                                                <div className="flex items-center gap-4">
-                                                                    <div className="p-3 bg-primary-foreground/20 rounded-xl">
-                                                                        <BarChart className="h-8 w-8" />
-                                                                    </div>
-                                                                    <div>
-                                                                        <h3 className="text-xl font-bold">Advanced Statistical & Technical Charts</h3>
-                                                                        <p className="text-primary-foreground/80">Real-time Analytics • Predictive Visualizations • ISO 10816 Compliance</p>
-                                                                    </div>
+                                                    {/* 📊 ENHANCED ADVANCED CHARTS & ANALYTICS TAB */}
+                                                    <ThemedAITabsContent value="charts" className="p-6 space-y-8 min-h-screen" variant="glass">
+                                                        <div className="space-y-8 max-w-none">
+                                                            {/* Enhanced Charts Header with Professional Design */}
+                                                            <div
+                                                                className="relative overflow-hidden p-8 rounded-3xl text-white shadow-2xl"
+                                                                style={{
+                                                                    background: `linear-gradient(135deg, ${themeClasses.primary}, ${themeClasses.primary}dd, ${themeClasses.primary}bb)`,
+                                                                    boxShadow: `0 20px 60px ${themeClasses.primary}30`
+                                                                }}
+                                                            >
+                                                                {/* Floating Particles Background */}
+                                                                <div className="absolute inset-0 overflow-hidden">
+                                                                    <div className="absolute top-4 left-8 w-2 h-2 bg-white/30 rounded-full animate-pulse"></div>
+                                                                    <div className="absolute top-12 right-12 w-1 h-1 bg-white/20 rounded-full animate-ping"></div>
+                                                                    <div className="absolute bottom-8 left-1/3 w-1.5 h-1.5 bg-white/25 rounded-full animate-bounce"></div>
+                                                                    <div className="absolute bottom-4 right-1/4 w-1 h-1 bg-white/15 rounded-full animate-pulse"></div>
                                                                 </div>
-                                                                <div className="flex items-center gap-2">
-                                                                    <Select value={selectedChartType} onValueChange={(value: any) => setSelectedChartType(value)}>
-                                                                        <SelectTrigger className="w-32 bg-white/20 border-white/30 text-white">
-                                                                            <SelectValue />
-                                                                        </SelectTrigger>
-                                                                        <SelectContent>
-                                                                            <SelectItem value="trend">Trend Analysis</SelectItem>
-                                                                            <SelectItem value="statistical">Statistical</SelectItem>
-                                                                            <SelectItem value="rul">RUL Prediction</SelectItem>
-                                                                            <SelectItem value="health">Health Metrics</SelectItem>
-                                                                        </SelectContent>
-                                                                    </Select>
-                                                                    <Button
-                                                                        onClick={() => {
-                                                                            generateAdvancedCharts(aiAssessment, formValues.vibrationData);
-                                                                        }}
-                                                                        className="bg-white/20 hover:bg-white/30 text-white border-white/30"
-                                                                    >
-                                                                        <Sparkles className="h-4 w-4 mr-2" />
-                                                                        Generate Charts
-                                                                    </Button>
+
+                                                                <div className="relative z-10 flex items-center justify-between">
+                                                                    <div className="flex items-center gap-6">
+                                                                        <div className="relative">
+                                                                            <div className="absolute inset-0 bg-white/20 rounded-2xl blur-lg opacity-75 animate-pulse"></div>
+                                                                            <div className="relative p-4 bg-white/10 rounded-2xl backdrop-blur-sm border border-white/20">
+                                                                                <BarChart className="h-10 w-10 text-white" />
+                                                                            </div>
+                                                                        </div>
+                                                                        <div>
+                                                                            <h3 className="text-2xl font-black mb-2">Advanced Analytics Dashboard</h3>
+                                                                            <p className="text-white/90 text-lg font-medium">Real-time Visualization • Predictive Analytics • ISO 10816 Compliance</p>
+                                                                            <div className="flex items-center gap-4 mt-3 text-sm">
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                                                                                    <span>Live Data</span>
+                                                                                </div>
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                                                                                    <span>AI-Powered</span>
+                                                                                </div>
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
+                                                                                    <span>Interactive</span>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-3">
+                                                                        <Select value={selectedChartType} onValueChange={(value: any) => setSelectedChartType(value)}>
+                                                                            <SelectTrigger
+                                                                                className="w-40 bg-white/10 border-white/20 text-white backdrop-blur-sm hover:bg-white/20 transition-all duration-300"
+                                                                                style={{
+                                                                                    background: 'rgba(255, 255, 255, 0.2)',
+                                                                                    borderColor: 'rgba(255, 255, 255, 0.3)'
+                                                                                }}
+                                                                            >
+                                                                                <SelectValue />
+                                                                            </SelectTrigger>
+                                                                            <SelectContent>
+                                                                                <SelectItem value="trend">Trend Analysis</SelectItem>
+                                                                                <SelectItem value="statistical">Statistical</SelectItem>
+                                                                                <SelectItem value="rul">RUL Prediction</SelectItem>
+                                                                                <SelectItem value="health">Health Metrics</SelectItem>
+                                                                            </SelectContent>
+                                                                        </Select>
+                                                                        <Button
+                                                                            onClick={() => {
+                                                                                generateAdvancedCharts(aiAssessment, formValues.vibrationData);
+                                                                            }}
+                                                                            className="text-white"
+                                                                            style={{
+                                                                                background: 'rgba(255, 255, 255, 0.2)',
+                                                                                borderColor: 'rgba(255, 255, 255, 0.3)'
+                                                                            }}
+                                                                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)'}
+                                                                            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
+
+                                                                        >
+                                                                            <Sparkles className="h-4 w-4 mr-2" />
+                                                                            Generate Charts
+                                                                        </Button>
+                                                                    </div>
                                                                 </div>
                                                             </div>
 
+                                                            {/* Enhanced Chart Dashboard */}
                                                             {chartConfigs.length > 0 ? (
-                                                                <div className="space-y-6">
-                                                                    {/* Chart Controls */}
-                                                                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                                                                        <div className="flex items-center gap-4">
-                                                                            <span className="text-sm font-medium text-gray-700">Time Range:</span>
-                                                                            <Select value={chartTimeRange} onValueChange={(value: any) => setChartTimeRange(value)}>
-                                                                                <SelectTrigger className="w-32">
-                                                                                    <SelectValue />
-                                                                                </SelectTrigger>
-                                                                                <SelectContent>
-                                                                                    <SelectItem value="7d">7 Days</SelectItem>
-                                                                                    <SelectItem value="30d">30 Days</SelectItem>
-                                                                                    <SelectItem value="90d">90 Days</SelectItem>
-                                                                                    <SelectItem value="1y">1 Year</SelectItem>
-                                                                                </SelectContent>
-                                                                            </Select>
-                                                                        </div>
-                                                                        <div className="flex items-center gap-2">
-                                                                            <Button size="sm" variant="outline">
-                                                                                <Download className="h-4 w-4 mr-2" />
-                                                                                Export
-                                                                            </Button>
-                                                                            <Button size="sm" variant="outline">
-                                                                                <Maximize2 className="h-4 w-4" />
-                                                                            </Button>
-                                                                        </div>
-                                                                    </div>
-
-                                                                    {/* Charts Grid */}
-                                                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                                                        {chartConfigs.map((chartConfig, index) => (
-                                                                            <div key={index} className="p-6 bg-white rounded-2xl border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300">
-                                                                                <div className="flex items-center justify-between mb-4">
-                                                                                    <h4 className="text-lg font-semibold text-gray-900">{chartConfig.title}</h4>
-                                                                                    <div className="flex items-center gap-2">
-                                                                                        <Badge variant="outline" className="text-xs">
-                                                                                            {chartConfig.type.toUpperCase()}
-                                                                                        </Badge>
-                                                                                        <Button size="sm" variant="ghost">
-                                                                                            <MoreVertical className="h-4 w-4" />
-                                                                                        </Button>
-                                                                                    </div>
+                                                                <div className="space-y-8">
+                                                                    {/* Professional Chart Controls Panel */}
+                                                                    <div
+                                                                        className="relative p-6 rounded-2xl border backdrop-blur-xl transition-all duration-1500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] hover:shadow-xl"
+                                                                        style={{
+                                                                            background: `linear-gradient(135deg, ${themeClasses.glassBg}, ${themeClasses.glassBg}80)`,
+                                                                            borderColor: themeClasses.glassBorder,
+                                                                            boxShadow: `0 8px 32px ${themeClasses.glassBg}40`
+                                                                        }}
+                                                                    >
+                                                                        <div className="flex items-center justify-between mb-6">
+                                                                            <div className="flex items-center gap-3">
+                                                                                <div
+                                                                                    className="p-2 rounded-lg"
+                                                                                    style={{ background: themeClasses.accent }}
+                                                                                >
+                                                                                    <Settings className="h-5 w-5" style={{ color: themeClasses.primary }} />
                                                                                 </div>
-                                                                                <div className="h-64">
-                                                                                    <EnhancedChart
-                                                                                        title={chartConfig.title}
-                                                                                        type={chartConfig.type}
-                                                                                        data={{
-                                                                                            labels: chartConfig.data.map(d => d.x),
-                                                                                            datasets: [{
-                                                                                                label: chartConfig.title,
-                                                                                                data: chartConfig.data.map(d => d.y),
-                                                                                                backgroundColor: chartConfig.data.map(d => d.color || '#3B82F6'),
-                                                                                                borderColor: '#3B82F6',
-                                                                                                borderWidth: 2,
-                                                                                                fill: false
-                                                                                            }]
-                                                                                        }}
-                                                                                        customOptions={{
-                                                                                            responsive: true,
-                                                                                            maintainAspectRatio: false,
-                                                                                            plugins: {
-                                                                                                legend: {
-                                                                                                    display: true,
-                                                                                                    position: 'top' as const
+                                                                                <div>
+                                                                                    <h4 className="font-bold text-lg text-foreground">Chart Controls</h4>
+                                                                                    <p className="text-sm text-muted-foreground">Customize visualization parameters</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-2">
+                                                                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                                                                <span className="text-sm font-medium text-green-600">Real-time</span>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                                                            <div className="space-y-2">
+                                                                                <label className="text-sm font-medium text-foreground">Time Range</label>
+                                                                                <Select value={chartTimeRange} onValueChange={(value: any) => setChartTimeRange(value)}>
+                                                                                    <SelectTrigger className="w-32">
+                                                                                        <SelectValue />
+                                                                                    </SelectTrigger>
+                                                                                    <SelectContent>
+                                                                                        <SelectItem value="7d">7 Days</SelectItem>
+                                                                                        <SelectItem value="30d">30 Days</SelectItem>
+                                                                                        <SelectItem value="90d">90 Days</SelectItem>
+                                                                                        <SelectItem value="1y">1 Year</SelectItem>
+                                                                                    </SelectContent>
+                                                                                </Select>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-2">
+                                                                                <Button size="sm" variant="outline">
+                                                                                    <Download className="h-4 w-4 mr-2" />
+                                                                                    Export
+                                                                                </Button>
+                                                                                <Button size="sm" variant="outline">
+                                                                                    <Maximize2 className="h-4 w-4" />
+                                                                                </Button>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* Charts Grid */}
+                                                                        <div className="grid grid-cols-1 2xl:grid-cols-2 gap-8 w-full overflow-x-auto">
+                                                                            {chartConfigs.map((chartConfig, index) => (
+                                                                                <div
+                                                                                    key={index}
+                                                                                    className="p-6 rounded-2xl border shadow-lg hover:shadow-xl transition-all duration-300 min-h-[500px] min-w-[400px] w-full"
+                                                                                    style={{
+                                                                                        background: 'hsl(var(--card))',
+                                                                                        borderColor: 'hsl(var(--border))'
+                                                                                    }}
+                                                                                >
+                                                                                    <div className="flex items-center justify-between mb-4">
+                                                                                        <h4 className="text-lg font-semibold" style={{ color: themeClasses.primary }}>{chartConfig.title}</h4>
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            <Badge variant="outline" className="text-xs">
+                                                                                                {chartConfig.type.toUpperCase()}
+                                                                                            </Badge>
+                                                                                            <Button size="sm" variant="ghost">
+                                                                                                <MoreVertical className="h-4 w-4" />
+                                                                                            </Button>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div className="h-96 min-h-[384px] w-full">
+                                                                                        <EnhancedChart
+                                                                                            title={chartConfig.title}
+                                                                                            type={chartConfig.type}
+                                                                                            data={{
+                                                                                                labels: chartConfig.data.map(d => d.x),
+                                                                                                datasets: [{
+                                                                                                    label: chartConfig.title,
+                                                                                                    data: chartConfig.data.map(d => d.y),
+                                                                                                    backgroundColor: chartConfig.data.map(d => d.color || themeClasses.primary),
+                                                                                                    borderColor: themeClasses.primary,
+                                                                                                    borderWidth: 2,
+                                                                                                    fill: false
+                                                                                                }]
+                                                                                            }}
+                                                                                            customOptions={{
+                                                                                                responsive: true,
+                                                                                                maintainAspectRatio: false,
+                                                                                                interaction: {
+                                                                                                    intersect: false,
+                                                                                                    mode: 'index' as const,
                                                                                                 },
-                                                                                                tooltip: {
-                                                                                                    callbacks: {
-                                                                                                        label: (context: any) => {
-                                                                                                            const dataPoint = chartConfig.data[context.dataIndex];
-                                                                                                            return dataPoint.label || `${context.label}: ${context.parsed.y}`;
+                                                                                                layout: {
+                                                                                                    padding: {
+                                                                                                        top: 10,
+                                                                                                        bottom: 10,
+                                                                                                        left: 10,
+                                                                                                        right: 10
+                                                                                                    }
+                                                                                                },
+                                                                                                plugins: {
+                                                                                                    legend: {
+                                                                                                        display: true,
+                                                                                                        position: 'top' as const
+                                                                                                    },
+                                                                                                    tooltip: {
+                                                                                                        callbacks: {
+                                                                                                            label: (context: any) => {
+                                                                                                                const dataPoint = chartConfig.data[context.dataIndex];
+                                                                                                                return dataPoint.label || `${context.label}: ${context.parsed.y}`;
+                                                                                                            }
                                                                                                         }
                                                                                                     }
-                                                                                                }
-                                                                                            },
-                                                                                            scales: chartConfig.type !== 'doughnut' && chartConfig.type !== 'radar' ? {
-                                                                                                x: {
-                                                                                                    display: true,
-                                                                                                    title: {
-                                                                                                        display: true,
-                                                                                                        text: 'Time / Component'
-                                                                                                    }
                                                                                                 },
-                                                                                                y: {
-                                                                                                    display: true,
-                                                                                                    title: {
+                                                                                                scales: chartConfig.type !== 'doughnut' && chartConfig.type !== 'radar' ? {
+                                                                                                    x: {
                                                                                                         display: true,
-                                                                                                        text: 'Value'
+                                                                                                        title: {
+                                                                                                            display: true,
+                                                                                                            text: 'Time / Component'
+                                                                                                        }
+                                                                                                    },
+                                                                                                    y: {
+                                                                                                        display: true,
+                                                                                                        title: {
+                                                                                                            display: true,
+                                                                                                            text: 'Value'
+                                                                                                        }
                                                                                                     }
-                                                                                                }
-                                                                                            } : undefined
-                                                                                        }}
-                                                                                    />
+                                                                                                } : undefined
+                                                                                            }}
+                                                                                        />
+                                                                                    </div>
                                                                                 </div>
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
+                                                                            ))}
+                                                                        </div>
 
-                                                                    {/* Chart Insights */}
-                                                                    <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-200">
-                                                                        <h4 className="text-lg font-semibold text-blue-900 mb-4 flex items-center gap-2">
-                                                                            <Lightbulb className="h-5 w-5" />
-                                                                            Chart Insights & Analysis
-                                                                        </h4>
-                                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                            <div className="p-4 bg-white rounded-xl">
-                                                                                <h5 className="font-semibold text-gray-900 mb-2">Trend Analysis</h5>
-                                                                                <p className="text-sm text-gray-600">
-                                                                                    Health score shows {aiAssessment.healthScore > 75 ? 'positive' : 'declining'} trend with
-                                                                                    {aiAssessment.confidence}% confidence level.
-                                                                                </p>
-                                                                            </div>
-                                                                            <div className="p-4 bg-white rounded-xl">
-                                                                                <h5 className="font-semibold text-gray-900 mb-2">Predictive Indicators</h5>
-                                                                                <p className="text-sm text-gray-600">
-                                                                                    RUL prediction indicates {maintenancePlan?.rulPrediction?.estimatedRUL || 'N/A'} days
-                                                                                    remaining useful life based on current operating conditions.
-                                                                                </p>
+                                                                        {/* Chart Insights */}
+                                                                        <div
+                                                                            className="p-6 rounded-2xl border"
+                                                                            style={{
+                                                                                background: themeClasses.cardBg,
+                                                                                borderColor: themeClasses.cardBorder
+                                                                            }}
+                                                                        >
+                                                                            <h4 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: themeClasses.primary }}>
+                                                                                <Lightbulb className="h-5 w-5" />
+                                                                                Chart Insights & Analysis
+                                                                            </h4>
+                                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                                <div
+                                                                                    className="p-4 rounded-xl"
+                                                                                    style={{ background: 'hsl(var(--card))' }}
+                                                                                >
+                                                                                    <h5 className="font-semibold mb-2" style={{ color: themeClasses.primary }}>Trend Analysis</h5>
+                                                                                    <p className="text-sm text-muted-foreground">
+                                                                                        Health score shows {aiAssessment.healthScore > 75 ? 'positive' : 'declining'} trend with
+                                                                                        {aiAssessment.confidence}% confidence level.
+                                                                                    </p>
+                                                                                </div>
+                                                                                <div
+                                                                                    className="p-4 rounded-xl"
+                                                                                    style={{ background: 'hsl(var(--card))' }}
+                                                                                >
+                                                                                    <h5 className="font-semibold mb-2" style={{ color: themeClasses.primary }}>Predictive Indicators</h5>
+                                                                                    <p className="text-sm text-muted-foreground">
+                                                                                        RUL prediction indicates {maintenancePlan?.rulPrediction?.estimatedRUL || 'N/A'} days
+                                                                                        remaining useful life based on current operating conditions.
+                                                                                    </p>
+                                                                                </div>
                                                                             </div>
                                                                         </div>
                                                                     </div>
                                                                 </div>
                                                             ) : (
                                                                 <div className="text-center py-12">
-                                                                    <BarChart className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-                                                                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No Charts Generated</h3>
-                                                                    <p className="text-gray-600 mb-4">Click "Generate Charts" to create advanced statistical and technical visualizations.</p>
+                                                                    <BarChart className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+                                                                    <h3 className="text-lg font-semibold text-foreground mb-2">No Charts Generated</h3>
+                                                                    <p className="text-muted-foreground mb-4">Click "Generate Charts" to create advanced statistical and technical visualizations.</p>
                                                                 </div>
                                                             )}
                                                         </div>
-                                                    </TabsContent>
+                                                    </ThemedAITabsContent>
 
-                                                </Tabs>
+                                                </ThemedAITabs>
                                             ) : (
                                                 <div className="text-center py-8">
-                                                    <Brain className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                                                    <Brain className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                                                     <p className="text-muted-foreground mb-2">AI Assessment Ready</p>
                                                     <p className="text-sm text-muted-foreground">
                                                         Enter vibration measurements to generate AI-powered condition assessment
@@ -5768,7 +6162,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                                                 </div>
                                             )}
                                         </CardContent>
-                                    </Card>
+                                    </ThemedAIAssessmentCard>
 
 
 
@@ -5776,7 +6170,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
 
                                     {/* Equipment Selection & Management */}
                                     <Card className="bg-card">
-                                        <CardHeader>
+                                        <CardHeader className="pb-3 pt-4 px-4">
                                             <CardTitle className="flex items-center gap-2">
                                                 <Factory className="h-5 w-5 text-primary" />
                                                 Equipment Management
@@ -5874,7 +6268,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                 </div >
 
                 {/* Footer with Navigation */}
-                <div className="border-t bg-muted/30 px-6 py-4">
+                <div className="border-t bg-muted/30 px-6 py-2">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             {currentStep > 0 && (
@@ -5921,12 +6315,12 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                             )}
                         </div>
                     </div>
-                </div >
+                </div>
             </DialogContent >
 
             {/* Alert Dialog */}
             < AlertDialog open={showAlert} onOpenChange={setShowAlert} >
-                <AlertDialogContent className="sm:max-w-[500px] p-8 rounded-lg">
+                <AlertDialogContent className="sm:max-w-[500px] p-6 rounded-lg">
                     <AlertDialogHeader>
                         <AlertDialogTitle className="text-3xl font-extrabold mb-2 text-center">
                             {alertType === 'error' ? 'Submission Failed' : 'Submission Successful!'}
@@ -5945,7 +6339,7 @@ const EnhancedVibrationForm: React.FC<EnhancedVibrationFormProps> = ({
                             )}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogFooter className="flex justify-center mt-4">
+                    <AlertDialogFooter className="flex justify-center mt-2">
                         <AlertDialogAction
                             className="text-xl px-8 py-3 rounded-lg"
                             onClick={() => {

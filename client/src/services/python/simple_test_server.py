@@ -196,10 +196,7 @@ class ReliabilityAPIHandler(BaseHTTPRequestHandler):
             de.get('velocity_axial', 0)
         ])
         
-        # Leg measurements
-        legs = equipment_data.get('legs', [])
-        for leg in legs:
-            vibrations.append(leg.get('velocity_h', 0))
+        # Leg measurements removed - using NDE/DE data for FailureAnalysisEngine
         
         # Filter non-zero values and calculate average
         non_zero_vibrations = [v for v in vibrations if v > 0]

@@ -503,9 +503,34 @@ interface MasterHealthDashboardProps {
 }
 
 export const MasterHealthDashboard: React.FC<MasterHealthDashboardProps> = ({ healthAssessment }) => {
+    // Enhanced validation for single equipment selections
+    const safeHealthAssessment = {
+        overallHealthScore: isNaN(healthAssessment.overallHealthScore) || !isFinite(healthAssessment.overallHealthScore)
+            ? 100
+            : Math.max(0, Math.min(100, healthAssessment.overallHealthScore)),
+        masterFaultIndex: isNaN(healthAssessment.masterFaultIndex) || !isFinite(healthAssessment.masterFaultIndex)
+            ? 0
+            : Math.max(0, healthAssessment.masterFaultIndex),
+        healthGrade: healthAssessment.healthGrade || 'A',
+        criticalFailures: healthAssessment.criticalFailures || [],
+        recommendations: healthAssessment.recommendations || ['No recommendations available'],
+        reliabilityMetrics: healthAssessment.reliabilityMetrics || {
+            mtbf: 8760,
+            mttr: 4,
+            availability: 99.95,
+            riskLevel: 'Low' as const
+        },
+        aiPoweredInsights: healthAssessment.aiPoweredInsights || {
+            predictedFailureMode: 'Normal Wear',
+            timeToFailure: 365,
+            confidenceLevel: 60,
+            maintenanceUrgency: 'Low' as const
+        }
+    };
+
     const getHealthTrend = () => {
-        if (healthAssessment.overallHealthScore >= 85) return { icon: TrendingUp, color: 'text-green-300' };
-        if (healthAssessment.overallHealthScore >= 70) return { icon: Activity, color: 'text-yellow-300' };
+        if (safeHealthAssessment.overallHealthScore >= 85) return { icon: TrendingUp, color: 'text-green-300' };
+        if (safeHealthAssessment.overallHealthScore >= 70) return { icon: Activity, color: 'text-yellow-300' };
         return { icon: TrendingDown, color: 'text-red-300' };
     };
 
@@ -537,17 +562,17 @@ export const MasterHealthDashboard: React.FC<MasterHealthDashboardProps> = ({ he
                             <span className="text-sm font-medium text-card-foreground">Health Score</span>
                         </div>
                         <div className="text-3xl font-bold text-orange-400 dark:text-orange-300 tracking-tight" style={{ textShadow: '0 0 8px rgba(255, 149, 0, 0.6)' }}>
-                            {healthAssessment.overallHealthScore.toFixed(1)}%
+                            {safeHealthAssessment.overallHealthScore.toFixed(1)}%
                         </div>
-                        <Badge className={getHealthGradeBadgeColor(healthAssessment.healthGrade)}>
-                            Grade {healthAssessment.healthGrade}
+                        <Badge className={getHealthGradeBadgeColor(safeHealthAssessment.healthGrade)}>
+                            Grade {safeHealthAssessment.healthGrade}
                         </Badge>
                     </div>
 
                     <div className="text-center p-4 bg-white/10 dark:bg-zinc-900/20 backdrop-blur-sm border border-primary/20 rounded-lg shadow-sm">
                         <div className="text-sm font-medium text-card-foreground mb-2">Master Fault Index</div>
                         <div className="text-2xl font-bold text-card-foreground">
-                            {healthAssessment.masterFaultIndex.toFixed(2)}
+                            {safeHealthAssessment.masterFaultIndex.toFixed(2)}
                         </div>
                         <div className="text-xs text-muted-foreground">Composite Risk Factor</div>
                     </div>
@@ -555,7 +580,7 @@ export const MasterHealthDashboard: React.FC<MasterHealthDashboardProps> = ({ he
                     <div className="text-center p-4 bg-white/10 dark:bg-zinc-900/20 backdrop-blur-sm border border-primary/20 rounded-lg shadow-sm">
                         <div className="text-sm font-medium text-card-foreground mb-2">Critical Issues</div>
                         <div className="text-2xl font-bold text-red-400">
-                            {healthAssessment.criticalFailures.length}
+                            {safeHealthAssessment.criticalFailures.length}
                         </div>
                         <div className="text-xs text-muted-foreground">Require Attention</div>
                     </div>
@@ -563,91 +588,87 @@ export const MasterHealthDashboard: React.FC<MasterHealthDashboardProps> = ({ he
                     <div className="text-center p-4 bg-white/10 dark:bg-zinc-900/20 backdrop-blur-sm border border-primary/20 rounded-lg shadow-sm">
                         <div className="text-sm font-medium text-card-foreground mb-2">Availability</div>
                         <div className="text-2xl font-bold text-green-400">
-                            {healthAssessment.reliabilityMetrics?.availability.toFixed(1) || '99.0'}%
+                            {safeHealthAssessment.reliabilityMetrics.availability.toFixed(1)}%
                         </div>
                         <div className="text-xs text-muted-foreground">System Uptime</div>
                     </div>
                 </div>
 
-                {/* AI-Powered Insights Section */}
-                {healthAssessment.aiPoweredInsights && (
-                    <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-lg border border-purple-200">
-                        <h4 className="font-semibold text-purple-800 mb-3 flex items-center gap-2">
-                            <Activity className="h-4 w-4" />
-                            AI-Powered Condition Assessment
-                        </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div className="text-center">
-                                <div className="text-sm text-purple-600 mb-1">Predicted Failure</div>
-                                <div className="font-semibold text-purple-800">
-                                    {healthAssessment.aiPoweredInsights.predictedFailureMode}
-                                </div>
-                            </div>
-                            <div className="text-center">
-                                <div className="text-sm text-purple-600 mb-1">Time to Failure</div>
-                                <div className="font-semibold text-purple-800">
-                                    {healthAssessment.aiPoweredInsights.timeToFailure} days
-                                </div>
-                            </div>
-                            <div className="text-center">
-                                <div className="text-sm text-purple-600 mb-1">Confidence</div>
-                                <div className="font-semibold text-purple-800">
-                                    {healthAssessment.aiPoweredInsights.confidenceLevel.toFixed(0)}%
-                                </div>
-                            </div>
-                            <div className="text-center">
-                                <div className="text-sm text-purple-600 mb-1">Urgency</div>
-                                <Badge className={getUrgencyBadgeColor(healthAssessment.aiPoweredInsights.maintenanceUrgency)}>
-                                    {healthAssessment.aiPoweredInsights.maintenanceUrgency}
-                                </Badge>
+                {/* AI-Powered Insights Section - Enhanced for single equipment */}
+                <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-lg border border-purple-200">
+                    <h4 className="font-semibold text-purple-800 mb-3 flex items-center gap-2">
+                        <Activity className="h-4 w-4" />
+                        AI-Powered Condition Assessment
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="text-center">
+                            <div className="text-sm text-purple-600 mb-1">Predicted Failure</div>
+                            <div className="font-semibold text-purple-800">
+                                {safeHealthAssessment.aiPoweredInsights.predictedFailureMode}
                             </div>
                         </div>
+                        <div className="text-center">
+                            <div className="text-sm text-purple-600 mb-1">Time to Failure</div>
+                            <div className="font-semibold text-purple-800">
+                                {safeHealthAssessment.aiPoweredInsights.timeToFailure} days
+                            </div>
+                        </div>
+                        <div className="text-center">
+                            <div className="text-sm text-purple-600 mb-1">Confidence</div>
+                            <div className="font-semibold text-purple-800">
+                                {safeHealthAssessment.aiPoweredInsights.confidenceLevel}%
+                            </div>
+                        </div>
+                        <div className="text-center">
+                            <div className="text-sm text-purple-600 mb-1">Urgency</div>
+                            <Badge className={getUrgencyBadgeColor(safeHealthAssessment.aiPoweredInsights.maintenanceUrgency)}>
+                                {safeHealthAssessment.aiPoweredInsights.maintenanceUrgency}
+                            </Badge>
+                        </div>
                     </div>
-                )}
+                </div>
 
-                {/* Reliability Metrics Section */}
-                {healthAssessment.reliabilityMetrics && (
-                    <div className="bg-gradient-to-r from-green-50 to-teal-50 p-4 rounded-lg border border-green-200">
-                        <h4 className="font-semibold text-green-800 mb-3 flex items-center gap-2">
-                            <Gauge className="h-4 w-4" />
-                            Reliability Engineering Metrics
-                        </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div className="text-center">
-                                <div className="text-sm text-green-600 mb-1">MTBF</div>
-                                <div className="font-semibold text-green-800">
-                                    {healthAssessment.reliabilityMetrics.mtbf.toLocaleString()} hrs
-                                </div>
-                            </div>
-                            <div className="text-center">
-                                <div className="text-sm text-green-600 mb-1">MTTR</div>
-                                <div className="font-semibold text-green-800">
-                                    {healthAssessment.reliabilityMetrics.mttr} hrs
-                                </div>
-                            </div>
-                            <div className="text-center">
-                                <div className="text-sm text-green-600 mb-1">Availability</div>
-                                <div className="font-semibold text-green-800">
-                                    {healthAssessment.reliabilityMetrics.availability.toFixed(2)}%
-                                </div>
-                            </div>
-                            <div className="text-center">
-                                <div className="text-sm text-green-600 mb-1">Risk Level</div>
-                                <Badge className={getRiskLevelBadgeColor(healthAssessment.reliabilityMetrics.riskLevel)}>
-                                    {healthAssessment.reliabilityMetrics.riskLevel}
-                                </Badge>
+                {/* Reliability Metrics Section - Enhanced for single equipment */}
+                <div className="bg-gradient-to-r from-green-50 to-teal-50 p-4 rounded-lg border border-green-200">
+                    <h4 className="font-semibold text-green-800 mb-3 flex items-center gap-2">
+                        <Gauge className="h-4 w-4" />
+                        Reliability Engineering Metrics
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="text-center">
+                            <div className="text-sm text-green-600 mb-1">MTBF</div>
+                            <div className="font-semibold text-green-800">
+                                {safeHealthAssessment.reliabilityMetrics.mtbf.toLocaleString()} hrs
                             </div>
                         </div>
+                        <div className="text-center">
+                            <div className="text-sm text-green-600 mb-1">MTTR</div>
+                            <div className="font-semibold text-green-800">
+                                {safeHealthAssessment.reliabilityMetrics.mttr} hrs
+                            </div>
+                        </div>
+                        <div className="text-center">
+                            <div className="text-sm text-green-600 mb-1">Availability</div>
+                            <div className="font-semibold text-green-800">
+                                {safeHealthAssessment.reliabilityMetrics.availability.toFixed(2)}%
+                            </div>
+                        </div>
+                        <div className="text-center">
+                            <div className="text-sm text-green-600 mb-1">Risk Level</div>
+                            <Badge className={getRiskLevelBadgeColor(safeHealthAssessment.reliabilityMetrics.riskLevel)}>
+                                {safeHealthAssessment.reliabilityMetrics.riskLevel}
+                            </Badge>
+                        </div>
                     </div>
-                )}
+                </div>
 
                 {/* Health Score Progress */}
                 <div className="space-y-2">
                     <div className="flex justify-between items-center">
                         <span className="text-sm font-medium">Overall Equipment Health</span>
-                        <span className="text-sm text-gray-500">{healthAssessment.overallHealthScore.toFixed(1)}%</span>
+                        <span className="text-sm text-gray-500">{safeHealthAssessment.overallHealthScore.toFixed(1)}%</span>
                     </div>
-                    <Progress value={healthAssessment.overallHealthScore} className="h-3" />
+                    <Progress value={safeHealthAssessment.overallHealthScore} className="h-3" />
                 </div>
 
                 {/* Critical Failures Alert */}

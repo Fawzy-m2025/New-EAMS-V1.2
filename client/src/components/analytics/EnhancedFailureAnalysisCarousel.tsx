@@ -95,7 +95,45 @@ const FAILURE_ICONS: Record<string, React.ElementType> = {
     'System Cavitation': Droplets,
     'System Electrical Faults': Zap,
     'System Flow Turbulence': Waves,
-    'System Resonance': Activity
+    'System Resonance': Activity,
+    // NEW: Bearing-specific failure modes
+    'Pump Shaft Misalignment (NDE vs DE Analysis)': Target,
+    'Motor Shaft Misalignment (NDE vs DE Analysis)': Target,
+    'Pump NDE Bearing Degradation': Radio,
+    'Motor NDE Bearing Degradation': Radio,
+    'Pump DE Bearing Degradation': Radio,
+    'Motor DE Bearing Degradation': Radio,
+    'Shaft Misalignment (NDE vs DE Analysis)': Target,
+    'NDE Bearing Degradation': Radio,
+    'DE Bearing Degradation': Radio
+};
+
+// NEW: Bearing location indicators for enhanced diagnostics
+const getBearingLocationBadge = (failureType: string) => {
+    if (failureType.includes('NDE') && !failureType.includes('vs DE')) {
+        return { label: 'NDE', color: 'bg-blue-500/20 text-blue-300 border-blue-500/30', description: 'Non-Drive End Bearing' };
+    } else if (failureType.includes('DE') && !failureType.includes('vs DE')) {
+        return { label: 'DE', color: 'bg-purple-500/20 text-purple-300 border-purple-500/30', description: 'Drive End Bearing' };
+    } else if (failureType.includes('NDE vs DE') || failureType.includes('Shaft Misalignment')) {
+        return { label: 'ALIGNMENT', color: 'bg-orange-500/20 text-orange-300 border-orange-500/30', description: 'Bearing Comparison Analysis' };
+    }
+    return null;
+};
+
+// Enhanced failure type parsing for bearing-specific information
+const parseFailureTypeDetails = (failureType: string) => {
+    const equipment = failureType.includes('Pump') ? 'Pump' : failureType.includes('Motor') ? 'Motor' : 'System';
+    const baseType = failureType.replace(/^(Pump|Motor|System)\s+/, '');
+    const bearingInfo = getBearingLocationBadge(failureType);
+
+    return {
+        equipment,
+        baseType,
+        bearingInfo,
+        isAlignmentIssue: failureType.includes('Misalignment'),
+        isBearingSpecific: failureType.includes('NDE') || failureType.includes('DE'),
+        isPumpMotorComparison: failureType.includes('vs DE')
+    };
 };
 
 // Severity-based styling
@@ -850,12 +888,53 @@ export function EnhancedFailureAnalysisCarousel({
                                                 `}>
                                                     <Icon className="w-5 h-5 drop-shadow-sm" />
                                                 </div>
-                                                <div>
+                                                <div className="flex-1">
                                                     <div className="font-semibold text-foreground group-hover:text-primary transition-colors duration-300">
-                                                        {analysis.type}
+                                                        {(() => {
+                                                            const details = parseFailureTypeDetails(analysis.type);
+                                                            return details.baseType;
+                                                        })()}
                                                     </div>
-                                                    <div className="text-xs text-muted-foreground">
-                                                        Index: {analysis.index}
+                                                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                                        <div className="text-xs text-muted-foreground">
+                                                            Index: {analysis.index.toFixed(2)}
+                                                        </div>
+                                                        {/* NEW: Bearing-specific badges in table */}
+                                                        {(() => {
+                                                            const details = parseFailureTypeDetails(analysis.type);
+                                                            const badges = [];
+
+                                                            // Equipment badge
+                                                            if (details.equipment !== 'System') {
+                                                                badges.push(
+                                                                    <Badge
+                                                                        key="equipment"
+                                                                        className={`text-xs px-1.5 py-0.5 ${
+                                                                            details.equipment === 'Pump'
+                                                                                ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
+                                                                                : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                                                                        }`}
+                                                                    >
+                                                                        {details.equipment}
+                                                                    </Badge>
+                                                                );
+                                                            }
+
+                                                            // Bearing location badge
+                                                            if (details.bearingInfo) {
+                                                                badges.push(
+                                                                    <Badge
+                                                                        key="bearing"
+                                                                        className={`text-xs px-1.5 py-0.5 ${details.bearingInfo.color}`}
+                                                                        title={details.bearingInfo.description}
+                                                                    >
+                                                                        {details.bearingInfo.label}
+                                                                    </Badge>
+                                                                );
+                                                            }
+
+                                                            return badges;
+                                                        })()}
                                                     </div>
                                                 </div>
                                             </div>
@@ -1146,17 +1225,68 @@ export function EnhancedFailureAnalysisCarousel({
                                                                 willChange: 'opacity, transform'
                                                             }}
                                                         >
-                                                            <h3
-                                                                className="font-bold leading-tight"
-                                                                style={{
-                                                                    fontSize: isActive ? '18px' : '16px',
-                                                                    lineHeight: isActive ? '1.3' : '1.4',
-                                                                    transition: 'font-size 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.25s, line-height 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.25s',
-                                                                    willChange: 'font-size, line-height'
-                                                                }}
-                                                            >
-                                                                {analysis.type}
-                                                            </h3>
+                                                            <div className="flex flex-col gap-1">
+                                                                <h3
+                                                                    className="font-bold leading-tight"
+                                                                    style={{
+                                                                        fontSize: isActive ? '18px' : '16px',
+                                                                        lineHeight: isActive ? '1.3' : '1.4',
+                                                                        transition: 'font-size 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.25s, line-height 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.25s',
+                                                                        willChange: 'font-size, line-height'
+                                                                    }}
+                                                                >
+                                                                    {(() => {
+                                                                        const details = parseFailureTypeDetails(analysis.type);
+                                                                        return details.baseType;
+                                                                    })()}
+                                                                </h3>
+                                                                {/* NEW: Bearing-specific badges */}
+                                                                <div className="flex items-center gap-2 flex-wrap">
+                                                                    {(() => {
+                                                                        const details = parseFailureTypeDetails(analysis.type);
+                                                                        const badges = [];
+
+                                                                        // Equipment badge
+                                                                        if (details.equipment !== 'System') {
+                                                                            badges.push(
+                                                                                <Badge
+                                                                                    key="equipment"
+                                                                                    className={`text-xs px-2 py-0.5 ${
+                                                                                        details.equipment === 'Pump'
+                                                                                            ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
+                                                                                            : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                                                                                    }`}
+                                                                                    style={{
+                                                                                        fontSize: isActive ? '10px' : '9px',
+                                                                                        transition: 'font-size 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.3s'
+                                                                                    }}
+                                                                                >
+                                                                                    {details.equipment}
+                                                                                </Badge>
+                                                                            );
+                                                                        }
+
+                                                                        // Bearing location badge
+                                                                        if (details.bearingInfo) {
+                                                                            badges.push(
+                                                                                <Badge
+                                                                                    key="bearing"
+                                                                                    className={`text-xs px-2 py-0.5 ${details.bearingInfo.color}`}
+                                                                                    style={{
+                                                                                        fontSize: isActive ? '10px' : '9px',
+                                                                                        transition: 'font-size 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.3s'
+                                                                                    }}
+                                                                                    title={details.bearingInfo.description}
+                                                                                >
+                                                                                    {details.bearingInfo.label}
+                                                                                </Badge>
+                                                                            );
+                                                                        }
+
+                                                                        return badges;
+                                                                    })()}
+                                                                </div>
+                                                            </div>
                                                             <p
                                                                 className="text-muted-foreground"
                                                                 style={{
@@ -1466,17 +1596,60 @@ export function EnhancedFailureAnalysisCarousel({
                                         })()}
                                     </div>
                                     <div>
-                                        <h3 className="text-xl font-bold">{selectedAnalysis.type}</h3>
-                                        <Badge className={`${selectedAnalysis.severity === 'Good'
-                                            ? 'bg-green-700/30 text-green-300 border border-green-700/50'
-                                            : selectedAnalysis.severity === 'Moderate'
-                                                ? 'bg-yellow-700/30 text-yellow-300 border border-yellow-700/50'
-                                                : selectedAnalysis.severity === 'Severe'
-                                                    ? 'bg-orange-700/30 text-orange-300 border border-orange-700/50'
-                                                    : 'bg-red-700/30 text-red-300 border border-red-700/50'
-                                            }`}>
-                                            {selectedAnalysis.severity}
-                                        </Badge>
+                                        <h3 className="text-xl font-bold">
+                                            {(() => {
+                                                const details = parseFailureTypeDetails(selectedAnalysis.type);
+                                                return details.baseType;
+                                            })()}
+                                        </h3>
+                                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                            <Badge className={`${selectedAnalysis.severity === 'Good'
+                                                ? 'bg-green-700/30 text-green-300 border border-green-700/50'
+                                                : selectedAnalysis.severity === 'Moderate'
+                                                    ? 'bg-yellow-700/30 text-yellow-300 border border-yellow-700/50'
+                                                    : selectedAnalysis.severity === 'Severe'
+                                                        ? 'bg-orange-700/30 text-orange-300 border border-orange-700/50'
+                                                        : 'bg-red-700/30 text-red-300 border border-red-700/50'
+                                                }`}>
+                                                {selectedAnalysis.severity}
+                                            </Badge>
+                                            {/* NEW: Enhanced bearing-specific badges in dialog */}
+                                            {(() => {
+                                                const details = parseFailureTypeDetails(selectedAnalysis.type);
+                                                const badges = [];
+
+                                                // Equipment badge
+                                                if (details.equipment !== 'System') {
+                                                    badges.push(
+                                                        <Badge
+                                                            key="equipment"
+                                                            className={`${
+                                                                details.equipment === 'Pump'
+                                                                    ? 'bg-cyan-700/30 text-cyan-300 border border-cyan-700/50'
+                                                                    : 'bg-indigo-700/30 text-indigo-300 border border-indigo-700/50'
+                                                            }`}
+                                                        >
+                                                            {details.equipment}
+                                                        </Badge>
+                                                    );
+                                                }
+
+                                                // Bearing location badge
+                                                if (details.bearingInfo) {
+                                                    badges.push(
+                                                        <Badge
+                                                            key="bearing"
+                                                            className={`${details.bearingInfo.color.replace('/20', '/30').replace('/30', '/50')}`}
+                                                            title={details.bearingInfo.description}
+                                                        >
+                                                            {details.bearingInfo.label}
+                                                        </Badge>
+                                                    );
+                                                }
+
+                                                return badges;
+                                            })()}
+                                        </div>
                                     </div>
                                 </>
                             )}

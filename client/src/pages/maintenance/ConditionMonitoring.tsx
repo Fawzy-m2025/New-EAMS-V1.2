@@ -54,10 +54,7 @@ interface VibrationMeasurement {
     nde: { bv: number; bg: number; accV: number; accH: number; accAxl: number; velV: number; velH: number; velAxl: number; temp: number; };
     de: { bv: number; bg: number; accV: number; accH: number; accAxl: number; velV: number; velH: number; velAxl: number; temp: number; };
   };
-  positions: {
-    pLeg1: boolean; pLeg2: boolean; pLeg3: boolean; pLeg4: boolean;
-    mLeg1: boolean; mLeg2: boolean; mLeg3: boolean; mLeg4: boolean;
-  };
+  // Leg positions removed - using NDE/DE data for FailureAnalysisEngine
 }
 
 const ConditionMonitoring = () => {
@@ -74,10 +71,7 @@ const ConditionMonitoring = () => {
       nde: { bv: 0, bg: 0, accV: 0, accH: 0, accAxl: 0, velV: 0, velH: 0, velAxl: 0, temp: 0 },
       de: { bv: 0, bg: 0, accV: 0, accH: 0, accAxl: 0, velV: 0, velH: 0, velAxl: 0, temp: 0 },
     },
-    positions: {
-      pLeg1: false, pLeg2: false, pLeg3: false, pLeg4: false,
-      mLeg1: false, mLeg2: false, mLeg3: false, mLeg4: false,
-    }
+    // Leg positions removed - using NDE/DE data for FailureAnalysisEngine
   });
   const [vibrationDropdown, setVibrationDropdown] = useState<string>('statistic');
   const [showVibrationForm, setShowVibrationForm] = useState(false);

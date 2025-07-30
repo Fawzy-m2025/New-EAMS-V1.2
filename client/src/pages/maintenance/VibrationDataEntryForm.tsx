@@ -101,10 +101,7 @@ const initialForm = {
         nde: { bv: '', bg: '', accV: '', accH: '', accAxl: '', velV: '', velH: '', velAxl: '', temp: '' },
         de: { bv: '', bg: '', accV: '', accH: '', accAxl: '', velV: '', velH: '', velAxl: '', temp: '' },
     },
-    positions: {
-        pLeg1: '', pLeg2: '', pLeg3: '', pLeg4: '',
-        mLeg1: '', mLeg2: '', mLeg3: '', mLeg4: '',
-    },
+    // Leg positions removed - using NDE/DE data for FailureAnalysisEngine
 };
 
 // Use standardized input color function
@@ -521,29 +518,7 @@ const VibrationDataEntryForm: React.FC<VibrationDataEntryFormProps> = ({ open, o
         });
     };
 
-    // Render bearing position input fields
-    const renderPositionButtons = (prefix: 'pLeg' | 'mLeg') => (
-        <div className="grid grid-cols-2 gap-2">
-            {[1, 2, 3, 4].map(num => (
-                <Controller
-                    key={prefix + num}
-                    name={`positions.${prefix}${num}` as any}
-                    control={control}
-                    render={({ field }) => (
-                        <div>
-                            <Label>{prefix === 'pLeg' ? 'Pump' : 'Motor'} Leg {num}</Label>
-                            <ThemedInput
-                                {...field}
-                                value={field.value ?? ''}
-                                placeholder={`Value for Leg ${num}`}
-                                className={getInputColor(field.value)}
-                            />
-                        </div>
-                    )}
-                />
-            ))}
-        </div>
-    );
+    // Leg position rendering removed - using NDE/DE data for FailureAnalysisEngine
 
     const rmsData = [
         { label: 'Pump NDE', value: calcRMSVelocity(values.pump?.nde || {}) },
@@ -1114,7 +1089,7 @@ const VibrationDataEntryForm: React.FC<VibrationDataEntryFormProps> = ({ open, o
                                                                 </div>
                                                             );
                                                         })()}
-                                                        <div className="mb-2">{renderPositionButtons('pLeg')}</div>
+                                                        {/* Pump leg positions removed - using NDE/DE data for FailureAnalysisEngine */}
                                                     </div>
                                                     {/* Motor NDE/DE */}
                                                     <div>
@@ -1207,7 +1182,7 @@ const VibrationDataEntryForm: React.FC<VibrationDataEntryFormProps> = ({ open, o
                                                                 </div>
                                                             );
                                                         })()}
-                                                        <div className="mb-2">{renderPositionButtons('mLeg')}</div>
+                                                        {/* Motor leg positions removed - using NDE/DE data for FailureAnalysisEngine */}
                                                     </div>
                                                 </div>
                                             </CardContent>

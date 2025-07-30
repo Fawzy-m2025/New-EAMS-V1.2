@@ -1,0 +1,14 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "npm-install",
+			"type": "shell",
+			"command": "cd \"d:/FAWZY/New folder (4)/New-EAMS-v11\" && npm install",
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		}
+	]
+}

@@ -39,16 +39,7 @@ export interface UnifiedVibrationData {
     pump?: VibrationEquipmentData;
     motor?: VibrationEquipmentData;
     compressor?: VibrationEquipmentData;
-    positions?: {
-        pLeg1?: string | boolean;
-        pLeg2?: string | boolean;
-        pLeg3?: string | boolean;
-        pLeg4?: string | boolean;
-        mLeg1?: string | boolean;
-        mLeg2?: string | boolean;
-        mLeg3?: string | boolean;
-        mLeg4?: string | boolean;
-    };
+    // Leg positions removed - using NDE/DE data for FailureAnalysisEngine
 }
 
 // Enhanced vibration history record with unified structure

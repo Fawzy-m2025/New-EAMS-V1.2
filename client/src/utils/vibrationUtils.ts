@@ -108,9 +108,9 @@ export function getVibrationTooltip(field: string | null | undefined, measuremen
                 return `${fieldUpper}: Enter velocity (mm/s). Measure vibration amplitude.`;
             case 'acceleration':
                 if (['accV', 'accH', 'accAxl', 'accelerationV', 'accelerationH', 'accelerationA'].includes(field)) {
-                    return `${fieldUpper}: Enter acceleration (m/s²). Higher values indicate potential mechanical issues.`;
+                    return `${fieldUpper}: Enter acceleration (mm/s²). Higher values indicate potential mechanical issues.`;
                 }
-                return `${fieldUpper}: Enter acceleration (m/s²). Measure vibration intensity.`;
+                return `${fieldUpper}: Enter acceleration (mm/s²). Measure vibration intensity.`;
             case 'displacement':
                 if (['displacementV', 'displacementH', 'displacementA'].includes(field)) {
                     return `${fieldUpper}: Enter displacement (μm). Measure shaft movement relative to bearing.`;
@@ -137,9 +137,9 @@ export const VIBRATION_FIELD_DEFINITIONS = {
     // VibrationDataEntryForm fields
     bv: { label: 'BV', tooltip: 'Bearing Vibration', unit: 'mm/s', type: 'velocity' as const },
     bg: { label: 'BG', tooltip: 'Bearing Gap', unit: 'μm', type: 'displacement' as const },
-    accV: { label: 'ACC-V', tooltip: 'Acceleration Vertical', unit: 'm/s²', type: 'acceleration' as const },
-    accH: { label: 'ACC-H', tooltip: 'Acceleration Horizontal', unit: 'm/s²', type: 'acceleration' as const },
-    accAxl: { label: 'ACC-A', tooltip: 'Acceleration Axial', unit: 'm/s²', type: 'acceleration' as const },
+    accV: { label: 'ACC-V', tooltip: 'Acceleration Vertical', unit: 'mm/s²', type: 'acceleration' as const },
+    accH: { label: 'ACC-H', tooltip: 'Acceleration Horizontal', unit: 'mm/s²', type: 'acceleration' as const },
+    accAxl: { label: 'ACC-A', tooltip: 'Acceleration Axial', unit: 'mm/s²', type: 'acceleration' as const },
     velV: { label: 'VEL-V', tooltip: 'Velocity Vertical', unit: 'mm/s', type: 'velocity' as const },
     velH: { label: 'VEL-H', tooltip: 'Velocity Horizontal', unit: 'mm/s', type: 'velocity' as const },
     velAxl: { label: 'VEL-A', tooltip: 'Velocity Axial', unit: 'mm/s', type: 'velocity' as const },
@@ -147,15 +147,15 @@ export const VIBRATION_FIELD_DEFINITIONS = {
 
     // EnhancedVibrationForm fields
     velocity: { label: 'VEL', tooltip: 'Overall Velocity', unit: 'mm/s', type: 'velocity' as const },
-    acceleration: { label: 'ACC', tooltip: 'Overall Acceleration', unit: 'm/s²', type: 'acceleration' as const },
+    acceleration: { label: 'ACC', tooltip: 'Overall Acceleration', unit: 'mm/s²', type: 'acceleration' as const },
     displacement: { label: 'DISP', tooltip: 'Overall Displacement', unit: 'μm', type: 'displacement' as const },
     temperature: { label: 'TEMP', tooltip: 'Temperature', unit: '°C', type: 'temperature' as const },
     velocityH: { label: 'VEL-H', tooltip: 'Velocity Horizontal', unit: 'mm/s', type: 'velocity' as const },
     velocityV: { label: 'VEL-V', tooltip: 'Velocity Vertical', unit: 'mm/s', type: 'velocity' as const },
     velocityA: { label: 'VEL-A', tooltip: 'Velocity Axial', unit: 'mm/s', type: 'velocity' as const },
-    accelerationH: { label: 'ACC-H', tooltip: 'Acceleration Horizontal', unit: 'm/s²', type: 'acceleration' as const },
-    accelerationV: { label: 'ACC-V', tooltip: 'Acceleration Vertical', unit: 'm/s²', type: 'acceleration' as const },
-    accelerationA: { label: 'ACC-A', tooltip: 'Acceleration Axial', unit: 'm/s²', type: 'acceleration' as const },
+    accelerationH: { label: 'ACC-H', tooltip: 'Acceleration Horizontal', unit: 'mm/s²', type: 'acceleration' as const },
+    accelerationV: { label: 'ACC-V', tooltip: 'Acceleration Vertical', unit: 'mm/s²', type: 'acceleration' as const },
+    accelerationA: { label: 'ACC-A', tooltip: 'Acceleration Axial', unit: 'mm/s²', type: 'acceleration' as const },
     displacementH: { label: 'DISP-H', tooltip: 'Displacement Horizontal', unit: 'μm', type: 'displacement' as const },
     displacementV: { label: 'DISP-V', tooltip: 'Displacement Vertical', unit: 'μm', type: 'displacement' as const },
     displacementA: { label: 'DISP-A', tooltip: 'Displacement Axial', unit: 'μm', type: 'displacement' as const }

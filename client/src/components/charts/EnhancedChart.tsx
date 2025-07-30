@@ -329,8 +329,8 @@ export function EnhancedChart({
 
             <CardContent className="pt-0">
                 <div
-                    className="relative"
-                    style={{ height: `${height}px` }}
+                    className="relative overflow-hidden"
+                    style={{ height: `${height}px`, maxHeight: `${height}px` }}
                 >
                     {(isLoading || loading) && (
                         <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-10">
@@ -351,6 +351,10 @@ export function EnhancedChart({
                         }}
                         style={{
                             background: 'transparent',
+                            maxWidth: '100%',
+                            maxHeight: '100%',
+                            width: '100%',
+                            height: '100%'
                         }}
                     />
                 </div>

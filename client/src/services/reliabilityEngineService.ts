@@ -134,22 +134,12 @@ export class ReliabilityEngineService {
                 pump: {
                     nde: formatMeasurement(vibrationData.pump?.nde),
                     de: formatMeasurement(vibrationData.pump?.de),
-                    legs: [
-                        { ...formatMeasurement({}), velocity_h: parseFloat(vibrationData.pump?.leg1?.velocity || '0') },
-                        { ...formatMeasurement({}), velocity_h: parseFloat(vibrationData.pump?.leg2?.velocity || '0') },
-                        { ...formatMeasurement({}), velocity_h: parseFloat(vibrationData.pump?.leg3?.velocity || '0') },
-                        { ...formatMeasurement({}), velocity_h: parseFloat(vibrationData.pump?.leg4?.velocity || '0') }
-                    ]
+                    legs: [] // Legs removed - using NDE/DE data for FailureAnalysisEngine
                 },
                 motor: {
                     nde: formatMeasurement(vibrationData.motor?.nde),
                     de: formatMeasurement(vibrationData.motor?.de),
-                    legs: [
-                        { ...formatMeasurement({}), velocity_h: parseFloat(vibrationData.motor?.leg1?.velocity || '0') },
-                        { ...formatMeasurement({}), velocity_h: parseFloat(vibrationData.motor?.leg2?.velocity || '0') },
-                        { ...formatMeasurement({}), velocity_h: parseFloat(vibrationData.motor?.leg3?.velocity || '0') },
-                        { ...formatMeasurement({}), velocity_h: parseFloat(vibrationData.motor?.leg4?.velocity || '0') }
-                    ]
+                    legs: [] // Legs removed - using NDE/DE data for FailureAnalysisEngine
                 }
             },
             operational_data: {
@@ -277,9 +267,8 @@ export class ReliabilityEngineService {
             vibrationData.motor.nde.velocity_h,
             vibrationData.motor.nde.velocity_v,
             vibrationData.motor.de.velocity_h,
-            vibrationData.motor.de.velocity_v,
-            ...vibrationData.pump.legs.map((leg: any) => leg.velocity_h),
-            ...vibrationData.motor.legs.map((leg: any) => leg.velocity_h)
+            vibrationData.motor.de.velocity_v
+            // Legs removed - using NDE/DE data for FailureAnalysisEngine
         ].filter(val => val > 0);
 
         return measurements.length > 0 ?
